@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Notas - Pinceladas Montessori</title>
+    
+    <!-- OPTIMIZACIÓN DE CONEXIÓN (PRECONNECT) -->
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="preconnect" href="https://sheets.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- FAVICON -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2240%22 width=%2220%22 height=%2250%22 rx=%224%22 fill=%22%23002060%22/><rect x=%2240%22 y=%2225%22 width=%2220%22 height=%2265%22 rx=%224%22 fill=%22%23002060%22/><rect x=%2270%22 y=%2210%22 width=%2220%22 height=%2280%22 rx=%224%22 fill=%22%23C00000%22/></svg>">
+
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Chewy&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        chewy: ['Chewy', 'cursive']
+                    },
+                    colors: {
+                        montessori: {
+                            blue: '#002060',
+                            red: '#C00000',
+                            yellow: '#FFD966',
+                            gray: '#F3F4F6'
+                        },
+                        logo: {
+                            blue: '#002060',
+                            red: '#C00000'
+                        }
+                    },
+                    boxShadow: {
+                        'card-hover': '0 15px 30px -5px rgba(0, 0, 0, 0.08), 0 10px 12px -6px rgba(0, 0, 0, 0.02)',
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.03)', 
+                        'calendar': '0 10px 25px -5px rgba(0, 32, 96, 0.1), 0 8px 10px -6px rgba(0, 32, 96, 0.1)'
+                    },
+                    animation: {
+                        'blob': 'blob 20s infinite alternate',
+                        'diagonal-shift': 'diagonalShift 3s ease-in-out infinite alternate',
+                        'random-shift': 'randomShift 3s ease-in-out infinite alternate', 
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(80px, -100px) scale(1.2) rotate(20deg)' },
+                            '66%': { transform: 'translate(-60px, 60px) scale(0.9) rotate(-10deg)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        randomShift: {
+                            '0%': { 'background-position': '0% 0%', 'transform': 'rotate(0deg) scale(1)' },
+                            '25%': { 'background-position': '25% 75%', 'transform': 'rotate(5deg) scale(1.05)' },
+                            '50%': { 'background-position': '50% 50%', 'transform': 'rotate(-3deg) scale(0.95)' },
+                            '75%': { 'background-position': '75% 25%', 'transform': 'rotate(8deg) scale(1.1)' },
+                            '100%': { 'background-position': '100% 100%', 'transform': 'rotate(0deg) scale(1)' },
+                        },
+                        diagonalShift: {
+                            '0%': { 'background-position': '0% 0%' },
+                            '100%': { 'background-position': '100% 100%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* --- CORE LAYOUT & PERFORMANCE --- */
+        body { 
+            background-color: #ffffff; 
+            height: 100vh; 
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* OPTIMIZACIÓN DE RENDERIZADO */
+        .animate-blob, .animate-random-shift, .animate-diagonal-shift, .marquee-content, #app-content, #view-home, #view-students {
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* MODO ALTO RENDIMIENTO */
+        body.high-performance-mode .particles-container,
+        body.high-performance-mode .animated-diagonal-background,
+        body.high-performance-mode .grid-overlay {
+            display: none !important;
+        }
+        
+        body.high-performance-mode {
+            background: #ffffff !important;
+        }
+        
+        /* Loader de texto minimalista */
+        @keyframes ellipsis {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        .loading-text::after {
+            content: '';
+            animation: ellipsis 1.5s infinite;
+            display: inline-block;
+            width: 12px;
+            text-align: left;
+        }
+
+        /* --- CLASES DE UTILIDAD --- */
+        main {
+            flex: 1;
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem; 
+            width: 100%;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* --- MARQUEE --- */
+        .marquee-wrapper {
+            display: flex;
+            overflow: hidden;
+            user-select: none;
+            mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+            align-items: center; 
+        }
+
+        .marquee-content {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center; 
+            justify-content: space-around;
+            min-width: 100%;
+            gap: 0; 
+            animation: scroll-seamless 50s linear infinite;
+            height: 100%; 
+        }
+
+        @keyframes scroll-seamless {
+            from { transform: translateX(0); }
+            to { transform: translateX(-100%); }
+        }
+
+        /* --- ANIMACIONES GENERALES --- */
+        @keyframes colorPulse { 
+            0% { color: #9CA3AF; } 
+            25% { color: #C00000; } 
+            50% { color: #9CA3AF; } 
+            75% { color: #002060; } 
+            100% { color: #9CA3AF; } 
+        }
+        .animate-pulse-color { animation: colorPulse 8s ease-in-out infinite; }
+
+        @keyframes blueRedCycle {
+            0%, 100% { color: #002060; } 
+            50% { color: #C00000; }      
+        }
+        .animate-blue-red { animation: blueRedCycle 3s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+
+
+        /* Loader circular */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3); 
+            border-radius: 50%; 
+            border-top: 3px solid #ffffff;
+            width: 20px; 
+            height: 20px; 
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* --- TRANSICIONES --- */
+        .fade-out { animation: fadeOut 0.4s ease-out forwards; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes fadeOut { 
+            from { opacity: 1; transform: scale(1); } 
+            to { opacity: 0; transform: scale(0.99); pointer-events: none; } 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: scale(0.99); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
+
+        /* --- LOGO --- */
+        :root { --logo-blue: #002060; --logo-red: #C00000; }
+        
+        .text-colegio {
+            color: var(--logo-blue);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: -0.1em;
+            line-height: 1;
+        }
+        .text-pinceladas {
+            font-family: 'Chewy', cursive;
+            color: var(--logo-red);
+            line-height: 1;
+        }
+        .text-montessori-sub {
+            background-color: var(--logo-blue);
+            color: #ffffff;
+            padding: 0.1em 0.3em;
+            border-radius: 50px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: -0.1em;
+            letter-spacing: 0.1em;
+            text-align: center;
+            width: auto; 
+        }
+        
+        .logo-lg .text-colegio { font-size: clamp(1rem, 2.5vw, 1.2rem); }
+        .logo-lg .text-pinceladas { font-size: clamp(2.5rem, 6vw, 3.2rem); }
+        .logo-lg .text-montessori-sub { font-size: clamp(1rem, 2.5vw, 1.2rem); }
+
+        .logo-sm .text-colegio { font-size: 0.55rem; }
+        .logo-sm .text-pinceladas { font-size: 1.3rem; }
+        .logo-sm .text-montessori-sub { font-size: 0.55rem; padding: 1px 4px; }
+
+        /* --- CALENDARIO STYLES --- */
+        #calendarGrid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr); 
+            gap: 0.25rem;
+            height: 100%;
+        }
+
+        .calendar-day {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            align-items: center;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease-out;
+            position: relative;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding-top: 2px;
+            height: 100%;
+            border: 1px solid transparent;
+        }
+
+        .calendar-day:hover:not(.empty) {
+            background-color: #EFF6FF;
+            border-color: #BFDBFE;
+            color: #002060;
+        }
+
+        .calendar-day.empty { cursor: default; pointer-events: none; }
+
+        .dot-indicator {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            margin-top: auto;
+            margin-bottom: 2px;
+        }
+
+        .calendar-day.current-day { background-color: #002060 !important; color: white !important; font-weight: 700; box-shadow: 0 2px 5px rgba(0,32,96,0.25); }
+        .calendar-day.current-day .dot-indicator { background-color: #FFD966; }
+
+        .calendar-day.holiday { background-color: #FEF2F2; color: #991B1B; border-color: #FECACA; }
+        .calendar-day.holiday .dot-indicator { background-color: #DC2626; }
+
+        .calendar-day.educational { background-color: #F0F9FF; color: #0369A1; border-color: #BAE6FD; }
+        .calendar-day.educational .dot-indicator { background-color: #0EA5E9; }
+
+        .calendar-day.holy-week { background-color: #FAF5FF; color: #6B21A8; border-color: #E9D5FF; }
+
+        .cal-nav-btn {
+            color: #002060;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            padding: 0.25rem;
+            flex-shrink: 0;
+        }
+        .cal-nav-btn:hover { background-color: #EFF6FF; color: #C00000; transform: scale(1.1); }
+        .cal-nav-btn:active { transform: scale(0.95); }
+
+        /* Modal Styles */
+        /* Eliminada la clase .modal-overlay personalizada porque ahora usamos clases de Tailwind directamente */
+        
+        /* --- FONDO ACADÉMICO Y PARTÍCULAS --- */
+        .particles-container {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .grade-particle {
+            position: absolute;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900; 
+            opacity: 0;
+            user-select: none;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.5); 
+        }
+
+        .grade-particle.blue { color: rgba(0, 32, 96, 0.25); }
+        .grade-particle.red { color: rgba(192, 0, 0, 0.25); }
+
+        .grade-particle.background {
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.8) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.1) rotate(var(--rotation)); opacity: 0; }
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 32, 96, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 32, 96, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        .animated-diagonal-background {
+            background: repeating-linear-gradient(
+                45deg, 
+                #DBEAFE 0%,
+                #DBEAFE 40%, 
+                #FEE2E2 60%,
+                #FEE2E2 100%
+            );
+            background-size: 200vw 200vh;
+            animation: diagonalShift 3s ease-in-out infinite alternate; 
+            position: absolute; 
+            inset: 0;
+            z-index: 0;
+            will-change: background-position, transform; 
+        }
+    </style>
+</head>
+<body class="text-slate-800 font-sans antialiased">
+
+    <!-- PRELOADER -->
+    <div id="initial-loader" class="fixed inset-0 z-[300] flex items-center justify-center bg-blue-50 transition-all duration-700">
+        <div class="animated-diagonal-background animate-diagonal-shift"></div>
+        <div class="particles-container z-10"><div class="grid-overlay"></div></div>
+        <div class="relative z-20 flex flex-col items-center justify-center">
+            <h1 class="text-5xl md:text-7xl font-bold font-montserrat animate-blue-red drop-shadow-sm text-center leading-tight">Cargando...</h1>
+        </div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-blue-50 overflow-hidden transition-all duration-700">
+        <div class="animated-diagonal-background animate-diagonal-shift"></div>
+        <div class="particles-container z-10"><div class="grid-overlay"></div></div>
+        <div id="quote-container" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center max-w-4xl mx-auto">
+            <h2 id="quote-text" class="text-3xl md:text-5xl font-bold text-montessori-blue leading-tight font-montserrat drop-shadow-sm mb-4"></h2>
+            <div class="h-1 w-24 bg-montessori-red rounded-full mx-auto"></div>
+        </div>
+        <div id="login-card" class="relative z-20 w-full max-w-3xl mx-4 transition-all duration-700">
+            <div class="bg-white/90 backdrop-blur-xl border border-white/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[380px]">
+                <div class="w-full md:w-5/12 bg-gray-50/80 flex flex-col items-center justify-center p-6 border-b md:border-b-0 md:border-r border-gray-100 gap-4">
+                    <div class="logo-container logo-lg cursor-default text-center transform scale-90 md:scale-100">
+                        <div class="text-section flex flex-col items-center">
+                            <div class="text-colegio">COLEGIO</div>
+                            <div class="text-pinceladas">Pinceladas</div>
+                            <div class="text-montessori-sub">MONTESSORI</div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-600 font-medium text-center hidden md:block mt-2">Sistema de Gestión Académica</p>
+                </div>
+                <div class="w-full md:w-7/12 p-6 md:p-8 flex flex-col justify-center">
+                    <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Credenciales de Acceso</label>
+                            <div class="space-y-3">
+                                <div class="relative group z-20">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="w-4 h-4 text-gray-600 group-focus-within:text-montessori-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    </div>
+                                    <input type="text" id="username" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/20 outline-none transition-all duration-500 text-sm placeholder-gray-600" placeholder="Usuario">
+                                </div>
+                                <div class="relative group z-20">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="w-4 h-4 text-gray-600 group-focus-within:text-montessori-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    </div>
+                                    <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/20 outline-none transition-all duration-500 text-sm placeholder-gray-600" placeholder="Contraseña">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="login-status-container" class="min-h-[40px] transition-all duration-300 rounded-lg flex items-center justify-center gap-2 border border-transparent text-center px-2 py-1 bg-gray-50">
+                             <span id="login-status-text" class="text-xs font-medium text-gray-600">Ingrese sus credenciales para continuar</span>
+                        </div>
+                        <button type="submit" id="btn-login" class="relative w-full bg-montessori-blue text-white font-bold text-sm py-3 rounded-lg shadow-lg shadow-montessori-blue/30 hover:bg-montessori-blue hover:shadow-montessori-blue/50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex justify-center items-center">
+                            <span id="btn-text">Iniciar Sesión</span>
+                            <div id="btn-loader" class="loader hidden absolute w-5 h-5 border-2"></div>
+                        </button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=gestion.educativa.pinceladas@gmail.com" target="_blank" class="text-[10px] text-gray-600 hover:text-montessori-blue transition-colors font-medium inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            Soporte Técnico
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIMEOUT -->
+    <div id="timeout-screen" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-blue-50 overflow-hidden opacity-0 transition-opacity duration-500 ease-out">
+        <div class="animated-diagonal-background animate-diagonal-shift"></div>
+        <div class="particles-container z-10"><div class="grid-overlay"></div></div>
+        <div class="relative z-20 bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white/50 max-w-lg w-full text-center transform transition-transform duration-500 scale-95" id="timeout-content">
+            <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-50/50">
+                <svg class="w-10 h-10 text-montessori-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2" id="timeout-title">Sesión Finalizada por Seguridad</h3>
+            <p class="text-gray-600 text-sm mb-8 leading-relaxed" id="timeout-message">Para proteger la confidencialidad de la información académica, la sesión ha finalizado tras detectar un periodo de inactividad. Presione el botón para restablecer el acceso.</p>
+            <button onclick="location.reload()" class="w-full bg-montessori-blue text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-800 hover:shadow-montessori-blue/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0">Restablecer Sesión</button>
+        </div>
+    </div>
+
+    <!-- ACCESO DENEGADO -->
+    <div id="access-denied-modal" class="hidden fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300 border border-gray-100">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-50 mb-4 animate-pulse">
+                    <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                </div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900 mb-2" id="modal-title">Acceso Restringido por Permisos</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-600 mb-6" id="access-denied-message">El acceso a este **curso** ha sido denegado.</p>
+                </div>
+                <div class="mt-2">
+                    <button type="button" onclick="closeAccessDenied()" class="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-md px-4 py-3 bg-gray-800 text-base font-bold text-white hover:bg-gray-700 focus:outline-none transition-all transform hover:-translate-y-0.5">Aceptar y Continuar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BOLETÍN -->
+    <div id="bulletin-modal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md opacity-0">
+        <div class="bg-white w-[95%] h-[90%] md:w-[90%] md:h-[90%] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform scale-100" id="bulletin-modal-content">
+            <div class="flex justify-between items-center px-6 py-3 bg-white border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="bg-montessori-blue/10 p-2 rounded-lg">
+                        <svg class="w-5 h-5 text-montessori-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-lg">Editor de Boletín</h3>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a id="external-link-btn" href="#" target="_blank" class="text-xs font-semibold text-montessori-blue hover:underline mr-2 hidden md:inline-block">Abrir en nueva pestaña</a>
+                    <button id="close-bulletin-btn" class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-red-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 bg-gray-100 relative">
+                 <div id="iframe-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10">
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-sm font-bold text-montessori-blue loading-text">Cargando documento</span>
+                    </div>
+                 </div>
+                 <iframe id="bulletin-iframe" class="w-full h-full border-0" allow="autoplay" loading="lazy"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================ -->
+    <!-- MODAL CALENDARIO PRINCIPAL -->
+    <!-- ================================ -->
+    <!-- MODIFICADO: Ahora usa bg-black/50 y backdrop-blur-sm para igualar el efecto del acceso denegado -->
+    <div id="calendar-modal" class="hidden fixed inset-0 z-[260] flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-200">
+        <!-- Contenido Modal -->
+        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-card border border-gray-200 overflow-hidden flex flex-col md:flex-row h-auto md:h-[500px] mx-4 transform scale-95 transition-transform duration-200" id="calendar-modal-content">
+            <!-- BOTÓN CERRAR -->
+            <button onclick="toggleCalendarModal()" class="absolute top-4 right-4 z-20 p-2 bg-white/80 hover:bg-white rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- PANEL IZQUIERDO -->
+            <div class="w-full md:w-1/3 bg-gray-50 p-6 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-gray-100 relative">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-montessori-blue to-montessori-red"></div>
+                
+                <!-- LOGO ELIMINADO -->
+                <div class="h-4 mb-6"></div>
+
+                <div class="flex flex-col items-start gap-2 mb-6 md:mb-0">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Calendario Académico</span>
+                    <div class="flex items-center gap-1">
+                        <button id="calPrevBtn" class="cal-nav-btn">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <div class="flex flex-col w-40 items-center text-center justify-center h-12">
+                            <h2 id="calMonthDisplay" class="text-xl font-black text-montessori-blue leading-none font-montserrat w-full whitespace-nowrap transition-all duration-200">...</h2>
+                            <span id="calYearDisplay" class="text-sm font-semibold text-montessori-red leading-tight w-full">...</span>
+                        </div>
+                        <button id="calNextBtn" class="cal-nav-btn">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-row md:flex-col flex-wrap gap-3 text-xs text-gray-600 mt-auto">
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-montessori-blue"></div> <span>Hoy</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-100 border border-red-300"></div> <span>Feriado</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-100 border border-blue-300"></div> <span>Actividad</span></div>
+                </div>
+            </div>
+            <!-- PANEL DERECHO -->
+            <div class="w-full md:w-2/3 p-6 md:p-8 flex flex-col h-full">
+                <div class="grid grid-cols-7 mb-2">
+                    <div class="text-center text-[10px] font-bold text-montessori-red uppercase tracking-widest">Dom</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Lun</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Mar</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Mié</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Jue</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Vie</div>
+                    <div class="text-center text-[10px] font-bold text-montessori-blue uppercase tracking-widest">Sáb</div>
+                </div>
+                <div class="flex-1 min-h-0">
+                    <div id="calendarGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE EVENTO (Z-Index mayor que el calendario) -->
+    <!-- MODIFICADO: Ahora usa bg-black/50 y backdrop-blur-sm para igualar el efecto del acceso denegado -->
+    <div id="event-detail-modal" class="hidden fixed inset-0 z-[270] flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-200 overflow-hidden" id="event-detail-content">
+            <div class="bg-montessori-blue p-5 text-white relative">
+                <button onclick="closeEventDetailModal()" class="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-full transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <h3 id="eventDetailDate" class="text-lg font-bold font-montserrat"></h3>
+            </div>
+            <div class="p-5 max-h-[60vh] overflow-y-auto" id="eventDetailBody"></div>
+            <div class="bg-gray-50 px-5 py-3 text-right">
+                <button onclick="closeEventDetailModal()" class="text-xs font-bold text-gray-600 hover:text-montessori-blue uppercase tracking-wide">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP CONTENT -->
+    <div id="app-content" class="hidden flex-col h-full w-full relative z-0 opacity-0 transition-opacity duration-1000 overflow-hidden">
+        <div id="academic-background" class="particles-container z-0"><div class="grid-overlay"></div></div>
+        <!-- HEADER -->
+        <header class="bg-white/90 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50 h-14 flex-shrink-0 w-full">
+            <div class="w-full px-6 h-full flex justify-between items-center">
+                <div class="logo-container logo-sm select-none">
+                    <div class="text-section flex flex-col items-center">
+                        <div class="text-colegio">COLEGIO</div>
+                        <div class="text-pinceladas">Pinceladas</div>
+                            <div class="text-montessori-sub">MONTESSORI</div>
+                    </div>
+                </div>
+                <div class="flex items-center h-full">
+                    <div class="flex flex-col items-end mr-4">
+                        <span class="text-[9px] font-bold text-gray-600 uppercase tracking-widest leading-tight">Conectado como</span>
+                        <span id="user-name-display" class="text-sm font-black text-montessori-blue leading-tight">...</span>
+                    </div>
+                    
+                    <!-- BOTÓN PLANIFICADOR (NUEVO) -->
+                    <a href="https://chrisjocoes21.github.io/PLANIFICADOR/" target="_blank" class="mr-3 p-2 rounded-full bg-blue-50 text-montessori-blue hover:bg-montessori-blue hover:text-white transition-all duration-200 group flex items-center justify-center" title="Planificador de Clases">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </a>
+
+                    <!-- BOTÓN CALENDARIO -->
+                    <button onclick="toggleCalendarModal()" class="mr-3 p-2 rounded-full bg-blue-50 text-montessori-blue hover:bg-montessori-blue hover:text-white transition-all duration-200 group" title="Ver Calendario">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </button>
+
+                    <div class="h-6 w-px bg-gray-200 mx-1"></div>
+
+                    <button onclick="logout()" class="ml-4 bg-red-50 hover:bg-red-100 text-red-500 font-bold text-xs px-3 py-1.5 rounded transition-all duration-200 flex items-center gap-2 group border border-transparent hover:border-red-200 uppercase tracking-wide">
+                        <span>Cerrar Sesión</span>
+                        <svg class="w-3 h-3 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN -->
+        <main class="flex-1 w-full px-6 py-6 no-scrollbar overflow-y-auto bg-transparent relative z-10">
+            <div class="w-full">
+                <div id="dashboard-metrics" class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Límite Calificaciones</p>
+                            <p class="text-xl font-bold text-slate-800 leading-none">15 de Diciembre de 2025</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                         <div class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-montessori-red/10 text-montessori-red flex items-center justify-center">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Entrega de Boletines</p>
+                            <p class="text-xl font-bold text-slate-800 leading-none">06 de Febrero de 2026</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                        <div id="status-icon-bg" class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-purple-50 text-purple-600 flex items-center justify-center transition-colors">
+                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-0.5">Base de Datos</p>
+                            <div class="flex items-center gap-2.5">
+                                <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <span id="status-label" class="text-2xl font-bold text-slate-800 leading-none">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-home" class="max-w-[1440px] mx-auto fade-in h-full flex flex-col pb-8 w-full">
+                    <div class="flex items-center gap-3 mb-4 pb-1">
+                        <div class="h-6 w-1.5 bg-montessori-red rounded-full"></div>
+                        <h2 class="text-lg font-bold text-montessori-red">Nivel Primaria</h2>
+                    </div>
+                    <div id="grid-primaria" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"></div>
+
+                    <div class="flex items-center gap-3 mb-4 pb-1">
+                        <div class="h-6 w-1.5 bg-montessori-blue rounded-full"></div>
+                        <h2 class="text-lg font-bold text-montessori-blue">Nivel Secundaria</h2>
+                    </div>
+                    <div id="grid-secundaria" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+                    <div id="announcement-banner" class="hidden mt-8 rounded-xl overflow-hidden shadow-sm border border-montessori-red fade-in relative bg-white w-full">
+                        <div class="flex items-center relative h-12">
+                            <div class="absolute left-0 top-0 h-full z-20 bg-white pr-4 pl-4 flex items-center gap-2 border-r border-montessori-red shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                                <div class="bg-montessori-red/10 p-1.5 rounded-full animate-pulse">
+                                    <svg class="w-4 h-4 text-montessori-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                                </div>
+                                <span class="text-xs font-bold tracking-widest uppercase text-montessori-red">Avisos</span>
+                            </div>
+                            <div class="marquee-wrapper w-full h-full pl-[110px]"> 
+                                <div id="marquee-track" class="marquee-content font-bold text-sm text-montessori-blue"></div>
+                                <div id="marquee-track-clone" class="marquee-content font-bold text-sm text-montessori-blue" aria-hidden="true"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-students" class="hidden fade-in w-full">
+                    <div class="w-full"> 
+                        <div class="flex items-center gap-2 mb-6 text-sm text-gray-600">
+                            <button onclick="showHome()" class="hover:text-montessori-blue hover:underline flex items-center gap-1 font-medium transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                Volver a Grados
+                            </button>
+                            <span>/</span>
+                            <span id="current-grade-title" class="font-bold text-montessori-blue">...</span>
+                        </div>
+                        <div class="w-full">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-gray-700 text-lg">Listado Oficial</h3>
+                                <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
+                                     <span class="text-xs font-medium loading-text">Actualizando</span>
+                                </div>
+                            </div>
+                            <div id="students-list-container" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white/90 backdrop-blur-sm border-t border-gray-200 py-6 mt-auto flex-shrink-0 w-full z-10">
+            <div class="text-center text-[10px] sm:text-xs text-gray-600">
+                <a href="https://chrisjocoes21.github.io/PORTAFOLIO/" target="_blank" class="animate-pulse-color font-medium transition-colors hover:text-montessori-blue hover:underline" title="Visitar Portafolio">
+                    © 2025 Sistema de Calificaciones - Desarrollado por Didac-Click Group.
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwnNusWP5LlxipynwTszW7bz70GNZa4n3RfEm-8tsM7nFktVeNvXATqz8HddKY_2YK9/exec"; 
+        
+        // --- ELEMENTOS GENERALES ---
+        const loginScreen = document.getElementById('login-screen');
+        const loginCard = document.getElementById('login-card');
+        const quoteContainer = document.getElementById('quote-container');
+        const quoteText = document.getElementById('quote-text');
+        const appContent = document.getElementById('app-content');
+        const userNameDisplay = document.getElementById('user-name-display');
+        const loginStatusContainer = document.getElementById('login-status-container');
+        const loginStatusText = document.getElementById('login-status-text');
+        const btnLogin = document.getElementById('btn-login');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const timeoutScreen = document.getElementById('timeout-screen');
+        const accessDeniedModal = document.getElementById('access-denied-modal');
+        const accessDeniedTitle = document.getElementById('modal-title'); 
+        const accessDeniedMessage = document.getElementById('access-denied-message'); 
+        const accessDeniedButton = accessDeniedModal.querySelector('button'); 
+        const initialLoader = document.getElementById('initial-loader');
+        
+        // --- MODAL DE BOLETÍN ---
+        const bulletinModal = document.getElementById('bulletin-modal');
+        const bulletinModalContent = document.getElementById('bulletin-modal-content');
+        const bulletinIframe = document.getElementById('bulletin-iframe');
+        const iframeLoader = document.getElementById('iframe-loader');
+        const externalLinkBtn = document.getElementById('external-link-btn');
+        const closeBulletinBtn = document.getElementById('close-bulletin-btn');
+        const studentsContainer = document.getElementById('students-list-container');
+
+        // --- MODAL CALENDARIO ---
+        const calendarModal = document.getElementById('calendar-modal');
+        const calendarModalContent = document.getElementById('calendar-modal-content');
+        
+        const calMonthDisplay = document.getElementById('calMonthDisplay');
+        const calYearDisplay = document.getElementById('calYearDisplay');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calPrevBtn = document.getElementById('calPrevBtn');
+        const calNextBtn = document.getElementById('calNextBtn');
+        const eventDetailModal = document.getElementById('event-detail-modal');
+        const eventDetailContent = document.getElementById('event-detail-content');
+        const eventDetailDate = document.getElementById('eventDetailDate');
+        const eventDetailBody = document.getElementById('eventDetailBody');
+
+        let userPermissions = '';
+        let currentCalMonth = new Date().getMonth();
+        let currentCalYear = new Date().getFullYear();
+
+        // --- DATOS GLOBALES ---
+        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        const calendarEvents = {
+            '8/13/2025': 'Bienvenida y jornada de formación y planificación docente',
+            '8/14/2025': 'Jornada de formación y planificación docente (+ Taller IA)',
+            '8/15/2025': 'Taller (SOMOS)',
+            '8/16/2025': 'Restauración de la República (No Laborable)',
+            '8/18/2025': 'Jornada de formación y planificación docente (18-20 Agosto)',
+            '8/19/2025': 'Jornada de formación y planificación docente (18-20 Agosto)',
+            '8/20/2025': 'Jornada de formación y planificación docente (18-20 Agosto)',
+            '8/21/2025': 'Jornada de formación y planificación docente + Taller Santillana',
+            '8/22/2025': 'Jornada de formación y planificación docente + Taller Actualidad',
+            '8/25/2025': 'Organización del ambiente educativo (25-28 Agosto)',
+            '8/26/2025': 'Organización del ambiente educativo (25-28 Agosto)',
+            '8/27/2025': 'Organización del ambiente educativo (25-28 Agosto)',
+            '8/28/2025': 'Organización del ambiente educativo (25-28 Agosto) + Supervisión',
+            '8/29/2025': 'Reunión padres de nuevo ingreso + Actividades Día de la Raza',
+            '9/1/2025': 'Inicio del año escolar 2025-2026 (PSC)',
+            '9/2/2025': 'Semana diagnóstica (2-4 Septiembre, PPC)',
+            '9/3/2025': 'Semana diagnóstica (2-4 Septiembre)',
+            '9/4/2025': 'Semana diagnóstica (2-4 Septiembre) + Inicio plan lectivo',
+            '9/5/2025': 'Organización de materiales + Inventario',
+            '9/8/2025': 'Día Internacional de la Alfabetización',
+            '9/12/2025': '1ER SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '9/15/2025': 'Preparativos Día del Encuentro entre Culturas',
+            '9/22/2025': 'Día de la Prevención y Atención a Emergencias',
+            '9/24/2025': 'Nuestra Señora de las Mercedes (No Laborable)',
+            '9/26/2025': 'Día Mundial de la Salud Ambiental + Reunión (APMAE)',
+            '9/29/2025': 'Día de los Derechos de la Niñez + Inicio evaluaciones mensuales',
+            '10/1/2025': 'Evaluaciones Septiembre (1-3 Octubre)',
+            '10/2/2025': 'Evaluaciones Septiembre (1-3 Octubre)',
+            '10/3/2025': 'Evaluaciones Septiembre (1-3 Octubre)',
+            '10/8/2025': 'Natalicio de G. Luperón',
+            '10/10/2025': 'Día Internacional de la Salud Mental + Encuentro entre Culturas',
+            '10/13/2025': 'Día del Encuentro entre Culturas (PPC)',
+            '10/14/2025': 'Encuentro entre Culturas (PSC y SPC)',
+            '10/16/2025': 'Día Mundial de la Alimentación',
+            '10/17/2025': 'TRIANGULAR INTERCOLEGIAL',
+            '10/21/2025': 'Natalicio de Salomé Ureña (Día del Poeta)',
+            '10/22/2025': 'Premiación Día del Poeta',
+            '10/24/2025': 'Olimpiadas de Lengua Española + Modelo ONU',
+            '10/27/2025': 'Semana de evaluación mensual Octubre del 27 al 31',
+            '10/28/2025': '2DO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '10/31/2025': 'Claustro de Maestros + Entrega planificación',
+            '11/3/2025': 'Inicio de P2',
+            '11/6/2025': 'Día de la Constitución (Día festivo, observado el 10 de Nov)',
+            '11/7/2025': 'Día Nacional del Deporte',
+            '11/10/2025': 'Día de la Constitución (No Laborable - Fecha Observada)',
+            '11/17/2025': 'Celebración día de los abuelos y abuelas (17-20 Noviembre, Nivel Inicial)',
+            '11/18/2025': 'Día Nacional de la Familia',
+            '11/20/2025': 'Día Universal del Niño',
+            '11/21/2025': 'Entrega Primer reporte de calificaciones (Primaria y Secundaria)',
+            '11/24/2025': 'Semana de evaluación mensual Noviembre del 24 al 27',
+            '11/25/2025': 'Día Internacional de la Eliminación de la Violencia contra la Mujer. Paseo Museo Hnas. Mirabal',
+            '11/26/2025': 'Día Nacional del Merengue',
+            '11/27/2025': '3ER SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '11/28/2025': 'Claustro docente - No docencia. Entrega planificación del mes y revisión de registros',
+            '12/3/2025': 'Día Internacional de las Personas con Discapacidad',
+            '12/5/2025': '4TO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '12/6/2025': 'VELADA/MUSICAL DE NAVIDAD',
+            '12/10/2025': 'Día Internacional de los Derechos Humanos + Inicio evaluaciones finales (10-12 de Dic)',
+            '12/12/2025': 'Último día de docencia PSC hasta SPC. Celebraciones navideñas',
+            '12/15/2025': 'Último día de docencia PPC e Inicial. Celebraciones navideñas',
+            '12/16/2025': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
+            '12/17/2025': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
+            '12/18/2025': 'Fiesta de Empleados',
+            '12/19/2025': 'Fiesta de Empleados',
+            '12/25/2025': 'Día de la Navidad (No Laborable)',
+            '1/1/2026': 'Día de Año Nuevo (No Laborable)',
+            '1/5/2026': 'Día de los Santos Reyes (No Laborable)',
+            '1/6/2026': 'Día Internacional de la Educación + Retorno personal docente y administrativo',
+            '1/7/2026': 'Reinicio de la docencia',
+            '1/14/2026': '5TO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '1/16/2026': 'Inicio elaboración feria científica (horario de la tarde - reunión)',
+            '1/21/2026': 'Nuestra Señora de la Altagracia (No Laborable)',
+            '1/26/2026': 'Día de Juan Pablo Duarte (No Laborable)',
+            '1/27/2026': 'Semana de evaluación mensual Enero del 27 al 30',
+            '1/30/2026': 'Claustro docente. Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros',
+            '2/2/2026': 'Inicio P3',
+            '2/6/2026': 'Entrega Segundo reporte de calificaciones (Primaria segundo ciclo y Secundaria primer ciclo)',
+            '2/16/2026': '6TO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '2/17/2026': 'Inicio Olimpiada Nacional de Ciencias (SPC)',
+            '2/18/2026': 'Día del Estudiante. Actividades de reconocimiento',
+            '2/19/2026': 'Inicio Olimpiadas de Matemáticas',
+            '2/23/2026': 'Semana de evaluación mensual Febrero del 23 al 26 + Semana Dominicana 23 - 26',
+            '2/24/2026': 'Acto conmemorativo Independencia Nacional (Inicial)',
+            '2/25/2026': 'Natalicio de Matías Ramón Mella + Acto conmemorativo Independencia Nacional (PSC)',
+            '2/26/2026': 'Claustro docente (ajustado por feriado) + Acto conmemorativo Independencia Nacional (SPC)',
+            '2/27/2026': 'Día de la Independencia Nacional (Feriado)',
+            '3/2/2026': 'Padre asistente (2-6 Marzo)',
+            '3/3/2026': 'Padre asistente (2-6 Marzo)',
+            '3/4/2026': 'Padre asistente (2-6 Marzo)',
+            '3/5/2026': 'Padre asistente (2-6 Marzo)',
+            '3/6/2026': 'Padre asistente (2-6 Marzo)',
+            '3/8/2026': 'Día Internacional de la Mujer',
+            '3/9/2026': 'Natalicio de Francisco del Rosario Sánchez (Actividades internas)',
+            '3/12/2026': 'Olimpiada Nacional de Ciencias Sociales + 7MO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '3/16/2026': 'Feria científica - Exposiciones (PPC)',
+            '3/17/2026': 'Feria científica - Exposiciones (PSC)',
+            '3/18/2026': 'Feria científica - Exposiciones (SPC)',
+            '3/19/2026': 'Feria tecnológica - Exposiciones',
+            '3/20/2026': 'Concours d\'orthographe (Francés)',
+            '3/23/2026': 'Día Mundial del agua + Semana de evaluación mensual Marzo del 23 al 26',
+            '3/27/2026': 'Entrega Tercer reporte de calificaciones (Primaria segundo ciclo y Secundaria primer ciclo) (Ensobradas)',
+            '3/29/2026': 'Inicio de la Semana Santa',
+            '3/30/2026': 'Semana Santa',
+            '3/31/2026': 'Semana Santa',
+            '4/1/2026': 'Semana Santa',
+            '4/2/2026': 'Jueves Santo',
+            '4/3/2026': 'Viernes Santo (No Laborable)',
+            '4/4/2026': 'Sábado Santo',
+            '4/6/2026': 'Claustro docente + Entrada personal docente y de apoyo',
+            '4/7/2026': 'Reinicio de la docencia',
+            '4/8/2026': 'Evaluaciones diagnósticas (8-10 Abril)',
+            '4/9/2026': 'Día del Deporte (Actividades escolares) + Evaluaciones diagnósticas (8-10 Abril)',
+            '4/10/2026': 'Evaluaciones diagnósticas (8-10 Abril)',
+            '4/12/2026': 'Pasadía Familiar',
+            '4/15/2026': 'Día Mundial del Arte',
+            '4/21/2026': 'Triangular intercolegial',
+            '4/22/2026': 'Día Mundial de la Madre Tierra + Paseo Zoo (Inicial y PPC)',
+            '4/23/2026': 'Día Mundial del Libro + Paseo Biblioteca Nacional (Sala Prof. Juan Bosch)',
+            '4/24/2026': 'Spelling Bee (Inglés)',
+            '4/27/2026': 'Semana de evaluación mensual Abril del 27 al 29',
+            '4/28/2026': '9NO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '4/30/2026': 'Claustro docente + Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros',
+            '5/1/2026': 'Día Internacional del Trabajo (No Laborable)',
+            '5/5/2026': 'Inicio talleres de arte para madres',
+            '5/15/2026': 'Paseo Museo de Historia Natural (Primaria y Secundaria)',
+            '5/18/2026': 'ERCE (18-30)',
+            '5/21/2026': '10MO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '5/25/2026': 'Semana de evaluación mensual Mayo del 25 al 27 + Día de la Madre. Actividades alusivas (25-29 Mayo)',
+            '5/26/2026': 'Día de la Madre. Actividades alusivas',
+            '5/27/2026': 'Día de la Madre. Actividades alusivas',
+            '5/28/2026': 'Día de la Madre. Actividades alusivas',
+            '5/29/2026': 'Día de la Madre. Actividades alusivas',
+            '6/1/2026': 'Repasos de evaluaciones finales (1-3 Junio)',
+            '6/2/2026': 'Repasos de evaluaciones finales (1-3 Junio)',
+            '6/3/2026': 'Repasos de evaluaciones finales (1-3 Junio)',
+            '6/4/2026': 'Corpus Christi (No Laborable)',
+            '6/5/2026': 'Claustro docente (No docencia) + Revisión final registros',
+            '6/8/2026': 'Evaluaciones finales (8-10 Junio, Salida 11 A.M) + 11VO SIMULACRO DE PREVENCIÓN DE SISMOS',
+            '6/9/2026': 'Evaluaciones finales (8-10 Junio, Salida 11 A.M)',
+            '6/10/2026': 'Evaluaciones finales (8-10 Junio, Salida 11 A.M)',
+            '6/11/2026': 'Preparativos graduación (No docencia)',
+            '6/12/2026': 'Graduaciones (pre primario y sexto de primaria)',
+            '6/17/2026': 'Entrega Boletines finales (PSC y SPC)',
+            '6/18/2026': 'Entrega Boletines finales (PPC y Montessori B)',
+            '6/19/2026': 'Entrega Boletines finales (Inicial)',
+            '6/30/2026': 'Día del Maestro (República Dominicana)'
+        };
+
+        const nonWorkingDays = new Set([
+            '8/16/2025', '9/24/2025', '11/10/2025', '12/25/2025',
+            '1/1/2026', '1/5/2026', '1/21/2026', '1/26/2026',
+            '2/27/2026', '4/3/2026', '5/1/2026', '6/4/2026'
+        ]);
+
+        const educationalHolidays = new Set([
+            '1/6/2026', '6/30/2025', '6/30/2026', '4/23/2025', '4/23/2026',
+            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/2025', '11/10/2026',
+            '10/10/2025', '10/10/2026', '10/16/2025', '10/16/2026', '10/21/2025',
+            '10/21/2026', '12/3/2025', '12/3/2026', '12/10/2025', '12/10/2026',
+            '11/20/2025', '11/20/2026', '4/15/2026', '4/22/2026'
+        ]);
+
+        const holyWeekDays = new Set([
+            '3/29/2026', '3/30/2026', '3/31/2026', '4/1/2026', '4/2/2026',
+            '4/3/2026', '4/4/2026'
+        ]);
+
+        // --- FUNCIONES ---
+
+        function initDynamicTexts(name) {
+            if (name) userNameDisplay.textContent = name;
+            accessDeniedTitle.textContent = 'Acceso Restringido por Permisos';
+            accessDeniedMessage.textContent = 'El acceso a este curso ha sido denegado. El perfil de usuario actual no tiene asignados los permisos necesarios para visualizar la información de este grado. Para asistencia o revisión de permisos, contacte al Tío Christopher.';
+            accessDeniedButton.textContent = 'Aceptar y Continuar';
+            document.getElementById('timeout-title').textContent = 'Sesión Finalizada por Seguridad';
+            document.getElementById('timeout-message').textContent = 'Para proteger la confidencialidad de la información académica, la sesión ha finalizado tras detectar un periodo de inactividad. Presione el botón para restablecer el acceso.';
+            document.querySelector('#timeout-content button').textContent = 'Restablecer Sesión';
+        }
+
+        const quotes = [
+            "Lo más importante es que lo más importante sea lo más importante.",
+            "Empieza cada día con un fin en mente.",
+            "Busca primero entender, para luego ser entendido.",
+            "La mejor forma de predecir tu futuro es creándolo.",
+            "Sinergiza: El todo es más grande que la suma de sus partes.",
+            "Sé proactivo: Tú eres el arquitecto de tu destino.",
+            "Afila la sierra: Nunca dejes de aprender y crecer."
+        ];
+
+        const gradosPrimaria = [
+            { nombre: "1º Grado", nivel: "Primaria", icon: "1" },
+            { nombre: "2º Grado", nivel: "Primaria", icon: "2" },
+            { nombre: "3º Grado", nivel: "Primaria", icon: "3" },
+            { nombre: "4º Grado", nivel: "Primaria", icon: "4" },
+            { nombre: "5º Grado", nivel: "Primaria", icon: "5" },
+            { nombre: "6º Grado", nivel: "Primaria", icon: "6" }
+        ];
+
+        const gradosSecundaria = [
+            { nombre: "1º Grado", nivel: "Secundaria", icon: "I" },
+            { nombre: "2º Grado", nivel: "Secundaria", icon: "II" },
+            { nombre: "3º Grado", nivel: "Secundaria", icon: "III" }
+        ];
+
+        const gradePromises = {}; 
+        let inactivityTimer;
+        let currentUserTimeoutMs = 1.5 * 60 * 1000; 
+        let statusInterval; 
+
+        function matchWidths() {
+            // Ajuste del logo principal (login y header)
+            document.querySelectorAll('.logo-container').forEach(container => {
+                const pinceladas = container.querySelector('.text-pinceladas');
+                const montessori = container.querySelector('.text-montessori-sub');
+                if (pinceladas && montessori) {
+                    montessori.style.width = `${pinceladas.offsetWidth}px`;
+                }
+            });
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            if (loginScreen.classList.contains('hidden') && timeoutScreen.classList.contains('hidden')) { 
+                inactivityTimer = setTimeout(() => handleSessionTimeout(), currentUserTimeoutMs);
+            }
+        }
+
+        function handleSessionTimeout() {
+            // IMPORTANTE: Reactivar las animaciones de fondo (quitar modo alto rendimiento)
+            // Esto corrige el problema de que el fondo se vea blanco si hay un boletín abierto
+            document.body.classList.remove('high-performance-mode');
+
+            // Cerrar cualquier modal abierto inmediatamente
+            if (!bulletinModal.classList.contains('hidden')) {
+                closeBulletinModal();
+            }
+            
+            if (!calendarModal.classList.contains('hidden')) {
+                // Lógica manual de cierre para evitar toggle
+                calendarModal.classList.add('opacity-0');
+                calendarModalContent.classList.remove('scale-100');
+                calendarModalContent.classList.add('scale-95');
+                // document.body.classList.remove('animations-paused'); // Ya no necesario aquí porque quitamos el high-performance-mode arriba
+                setTimeout(() => {
+                    calendarModal.classList.add('hidden');
+                }, 200);
+            }
+            
+            if (!eventDetailModal.classList.contains('hidden')) {
+                closeEventDetailModal();
+            }
+
+            sessionStorage.removeItem('pinceladas_session');
+            timeoutScreen.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                 document.getElementById('timeout-content').classList.remove('scale-95');
+                 document.getElementById('timeout-content').classList.add('scale-100');
+                 timeoutScreen.classList.remove('opacity-0');
+            });
+            document.getElementById('app-content').classList.add('blur-sm');
+        }
+        
+        function removeInitialLoader() {
+            if(!initialLoader) return;
+            initialLoader.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                initialLoader.classList.add('hidden');
+            }, 700);
+        }
+
+        function checkSessionValidity() {
+            const sessionData = sessionStorage.getItem('pinceladas_session');
+            if (sessionData) {
+                const session = JSON.parse(sessionData);
+                const sessionTimeout = session.timeout ? (session.timeout * 60 * 1000) : currentUserTimeoutMs;
+                
+                if ((new Date().getTime() - session.loginTime) > sessionTimeout) {
+                    sessionStorage.removeItem('pinceladas_session');
+                    removeInitialLoader();
+                } else {
+                    currentUserTimeoutMs = sessionTimeout;
+                    userPermissions = session.permissions || ''; 
+                    skipIntro(session.name);
+                    resetInactivityTimer();
+                }
+            } else {
+                removeInitialLoader();
+            }
+        }
+
+        function updateLoginStatus(status, message) {
+            loginStatusContainer.className = 'min-h-[40px] transition-all duration-300 rounded-lg flex items-center justify-center gap-2 border px-2 py-1';
+            loginStatusText.className = 'text-xs font-bold';
+            loginStatusText.textContent = message;
+            
+            if (status === 'error') {
+                loginStatusContainer.classList.add('bg-red-50', 'border-red-200');
+                loginStatusText.classList.add('text-red-600');
+            } else if (status === 'success') {
+                loginStatusContainer.classList.add('bg-green-50', 'border-green-200');
+                loginStatusText.classList.add('text-green-600');
+            } else if (status === 'loading') {
+                loginStatusContainer.classList.add('bg-blue-50', 'border-blue-200');
+                loginStatusText.classList.add('text-blue-600');
+            } else {
+                 loginStatusContainer.classList.add('bg-gray-50', 'border-transparent');
+                 loginStatusText.classList.add('text-gray-600', 'font-medium');
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+            
+            updateLoginStatus('loading', 'Verificando credenciales...');
+            btnText.classList.add('opacity-0');
+            btnLoader.classList.remove('hidden');
+            btnLogin.classList.add('cursor-not-allowed');
+            btnLogin.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(usernameInput)}&password=${encodeURIComponent(passwordInput)}`, {
+                    redirect: "follow"
+                });
+                
+                if (!response.ok) throw new Error("Network response was not ok");
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateLoginStatus('success', '¡Acceso Autorizado! Redirigiendo...');
+                    currentUserTimeoutMs = (data.timeout || 1.5) * 60 * 1000;
+                    userPermissions = data.permissions || ''; 
+                    
+                    sessionStorage.setItem('pinceladas_session', JSON.stringify({
+                        auth: true,
+                        name: data.name,
+                        permissions: data.permissions, 
+                        timeout: data.timeout,
+                        loginTime: new Date().getTime()
+                    }));
+                    
+                    setTimeout(() => checkSystemStatus(data.name), 100); 
+                    setTimeout(() => prefetchGradesData(), 300);
+                    setTimeout(() => loadAnnouncements(), 800); 
+
+                    setTimeout(() => {
+                        unlockInterface(data.name);
+                    }, 1000);
+                } else {
+                    throw new Error('Credenciales'); 
+                }
+            } catch (error) {
+                if (error.message === 'Credenciales') {
+                    updateLoginStatus('error', 'Credenciales incorrectas');
+                } else {
+                    console.warn("Login fetch error:", error);
+                    updateLoginStatus('error', 'Error de conexión. Intente de nuevo.');
+                }
+
+                btnText.classList.remove('opacity-0');
+                btnLoader.classList.add('hidden');
+                btnLogin.classList.remove('cursor-not-allowed');
+                btnLogin.disabled = false;
+                if (navigator.vibrate) navigator.vibrate(200);
+            } finally {
+                document.getElementById('password').value = '';
+            }
+        }
+
+        function checkPermissions(gradeName, level) {
+            const sessionData = sessionStorage.getItem('pinceladas_session');
+            if (!sessionData) return false;
+            
+            const session = JSON.parse(sessionData);
+            const userPerms = (session.permissions || "").toUpperCase().trim();
+            
+            if (userPerms === 'TODO' || userPerms === 'ADMIN') return true;
+
+            const g = gradeName.toUpperCase(); 
+            const l = (level || "").toUpperCase();     
+
+            if (userPerms.includes(`${g} ${l}`)) return true; 
+            
+            const shortGrade = g.replace(' GRADO', ''); 
+            if (userPerms.includes(`${shortGrade} ${l}`)) return true;
+
+            if (userPerms.includes(g)) return true;
+
+            return false;
+        }
+
+        function closeAccessDenied() {
+            accessDeniedModal.classList.remove('opacity-100');
+            accessDeniedModal.classList.add('opacity-0');
+            setTimeout(() => {
+                accessDeniedModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function prefetchGradesData() {
+            const allGrades = [...gradosPrimaria, ...gradosSecundaria];
+            allGrades.forEach(g => {
+                if (checkPermissions(g.nombre, g.nivel)) {
+                    const key = `${g.nombre}-${g.nivel}`;
+                    gradePromises[key] = fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(g.nombre)}&level=${encodeURIComponent(g.nivel)}&t=${new Date().getTime()}`, { redirect: 'follow' })
+                        .then(response => response.json())
+                        .catch(error => []);
+                }
+            });
+        }
+
+        async function loadAnnouncements() {
+            const banner = document.getElementById('announcement-banner');
+            const track1 = document.getElementById('marquee-track');
+            const track2 = document.getElementById('marquee-track-clone');
+            
+            try {
+                const response = await fetch(`${API_URL}?action=getAnnouncements`, { redirect: "follow" });
+                
+                if (!response.ok) throw new Error('Error de red al cargar anuncios');
+
+                const announcements = await response.json();
+                
+                if (announcements && announcements.length > 0) {
+                    const rawText = announcements.map(a => `<span>${a.mensaje}</span>`).join('<span class="mx-6 text-montessori-red/50 text-lg font-light">|</span>');
+                    if(!rawText.trim()) { banner.classList.add('hidden'); return; }
+
+                    const separator = '<span class="mx-6 text-montessori-red/50 text-lg font-light">|</span>';
+                    const repeatedBlock = `${rawText} ${separator} ${rawText} ${separator} ${rawText} ${separator}`;
+
+                    track1.innerHTML = repeatedBlock;
+                    track2.innerHTML = repeatedBlock; 
+                    banner.classList.remove('hidden'); 
+                } else {
+                    banner.classList.add('hidden'); 
+                }
+            } catch (e) {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('pinceladas_session');
+            location.reload();
+        }
+
+        function renderGrades() {
+            const pContainer = document.getElementById('grid-primaria');
+            const sContainer = document.getElementById('grid-secundaria');
+            if(!pContainer || !sContainer) return; 
+
+            const createCard = (g, colorClass, borderClass) => {
+                const hasPermission = checkPermissions(g.nombre, g.nivel);
+                
+                const baseClasses = "cursor-pointer bg-white border rounded-xl p-6 flex justify-between items-center transition-all duration-300 group transform will-change-transform";
+                let finalClasses = baseClasses;
+                let finalAction = `onclick="loadStudents('${g.nombre}', '${g.nivel}')"`;
+                
+                let iconClasses = `h-10 w-10 rounded-lg flex items-center justify-center font-bold text-lg transition-colors`;
+                let gradeClasses = `text-xl font-bold transition-colors`;
+                
+                if (hasPermission) {
+                    finalClasses += ` ${borderClass} hover:shadow-lg hover:-translate-y-1`;
+                    gradeClasses += ` text-gray-800 group-hover:text-black`;
+                    
+                    if (colorClass === 'red') {
+                        iconClasses += ' bg-red-50 text-montessori-red';
+                    } else {
+                        iconClasses += ' bg-blue-50 text-montessori-blue';
+                    }
+                } else {
+                    finalClasses += ` border-gray-100 opacity-50 cursor-not-allowed hover:shadow-none`;
+                    gradeClasses += ` text-gray-600`;
+                    iconClasses += ' bg-gray-50 text-gray-600';
+                    finalAction = `onclick="showAccessDeniedMessage()"`;
+                }
+
+                return `
+                    <div ${finalAction} class="${finalClasses}">
+                         <div>
+                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Grado</p>
+                            <h3 class="${gradeClasses}">${g.nombre}</h3>
+                         </div>
+                         <div class="${iconClasses}">
+                            ${g.icon}
+                         </div>
+                    </div>
+                `;
+            };
+            
+            pContainer.innerHTML = gradosPrimaria.map(g => createCard(g, 'red', 'border-montessori-red')).join('');
+            sContainer.innerHTML = gradosSecundaria.map(g => createCard(g, 'blue', 'border-montessori-blue')).join('');
+        }
+        
+        function showAccessDeniedMessage() {
+            initDynamicTexts();
+
+            accessDeniedModal.classList.remove('hidden');
+            setTimeout(() => {
+                accessDeniedModal.classList.remove('opacity-0', 'scale-95');
+                accessDeniedModal.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function showHome() {
+            document.getElementById('view-home').classList.remove('hidden');
+            document.getElementById('dashboard-metrics').classList.remove('hidden');
+            document.getElementById('view-students').classList.add('hidden');
+            
+            // REACTIVAR ANIMACIONES AL VOLVER AL HOME
+            document.body.classList.remove('high-performance-mode');
+        }
+
+        async function loadStudents(grade, level) {
+            if (!checkPermissions(grade, level)) {
+                showAccessDeniedMessage();
+                return; 
+            }
+
+            // OPTIMIZACIÓN AGRESIVA: MATAR ANIMACIONES DE FONDO
+            document.body.classList.add('high-performance-mode');
+
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('dashboard-metrics').classList.add('hidden');
+            document.getElementById('view-students').classList.remove('hidden');
+            
+            const titleEl = document.getElementById('current-grade-title');
+            titleEl.textContent = `${grade} - ${level}`;
+            titleEl.className = `font-bold ${level === 'Primaria' ? 'text-montessori-red' : 'text-montessori-blue'}`;
+
+            const listContainer = document.getElementById('students-list-container');
+            const loader = document.getElementById('loading-indicator');
+            
+            while (listContainer.firstChild) {
+                listContainer.removeChild(listContainer.firstChild);
+            }
+            
+            loader.classList.remove('hidden');
+            
+            const key = `${grade}-${level}`;
+            try {
+                let data;
+                if (gradePromises[key]) {
+                    data = await gradePromises[key];
+                } else {
+                    const response = await fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(grade)}&level=${encodeURIComponent(level)}&t=${new Date().getTime()}`, { redirect: 'follow' });
+                    data = await response.json();
+                }
+                loader.classList.add('hidden');
+                renderStudentList(data, listContainer, level);
+            } catch (error) {
+                loader.classList.add('hidden');
+                listContainer.innerHTML = `<div class="text-red-500 text-center">Error de conexión.</div>`;
+            }
+        }
+
+        // --- FUNCIONES DE MODAL (CERO LAG + MODO EDICIÓN) ---
+        
+        function openBulletinModal(url) {
+            if (!url) return;
+            
+            // 1. Pausa de animaciones de fondo
+            document.body.classList.add('animations-paused');
+            
+            // 2. Usamos la URL original (Modo Edición)
+            iframeLoader.classList.remove('hidden');
+            bulletinIframe.src = url; // <-- Se usa la URL original para la edición
+            externalLinkBtn.href = url;
+
+            // 3. Mostrar Modal (INSTANTÁNEO)
+            bulletinModal.classList.remove('hidden', 'opacity-0');
+        }
+
+        function closeBulletinModal() {
+            // 1. Ocultar visualmente PRIMERO
+            bulletinModal.classList.add('opacity-0', 'hidden');
+            
+            // 2. Reactivar animaciones
+            document.body.classList.remove('animations-paused');
+            
+            // 3. Destruir el iframe
+            setTimeout(() => {
+                bulletinIframe.removeAttribute('src'); 
+            }, 50);
+        }
+
+        function prefetchBulletin(url) {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = url;
+            document.head.appendChild(link);
+        }
+
+        function renderStudentList(data, container, level) {
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-600">Sin registros</div>`;
+                return;
+            }
+
+            const hoverClass = level === 'Primaria' ? 'hover:border-montessori-red' : 'hover:border-montessori-blue';
+            const btnClass = level === 'Primaria' 
+                ? 'text-montessori-red border-montessori-red hover:bg-montessori-red' 
+                : 'text-montessori-blue border-montessori-blue hover:bg-montessori-blue';
+
+            container.innerHTML = data.map((student, index) => `
+                <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-lg ${hoverClass} hover:shadow-sm transition-colors">
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-gray-600 w-6 text-right">${index + 1}.</span>
+                        <span class="font-semibold text-gray-700">${student.nombre}</span>
+                    </div>
+                    <button type="button" 
+                            class="btn-bulletin-action text-sm font-bold ${btnClass} px-4 py-2 rounded-lg hover:text-white border transition-all cursor-pointer"
+                            data-link="${student.link}">
+                        Boletín
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        const symbols = ['100', 'A+', 'A', '10', '✓', '95', 'B+', '★', '90', 'A', '100'];
+
+        function initAllParticles() {
+            const containers = document.querySelectorAll('.particles-container');
+            containers.forEach(container => createParticlesForContainer(container));
+        }
+
+        function createParticlesForContainer(container) {
+            const particleCount = 18; 
+            for (let i = 0; i < particleCount; i++) {
+                spawnParticle(container);
+            }
+        }
+
+        function spawnParticle(container) {
+            const span = document.createElement('span');
+            span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            span.classList.add('grade-particle');
+            if (Math.random() > 0.5) span.classList.add('blue');
+            else span.classList.add('red');
+
+            const rotation = Math.floor(Math.random() * 40 - 20);
+            span.style.setProperty('--rotation', `${rotation}deg`);
+
+            span.classList.add('background');
+            const left = Math.random() * 100;
+            const duration = 15 + Math.random() * 20; 
+            const delay = Math.random() * -30; 
+            const size = 0.8 + Math.random() * 1.2; 
+
+            span.style.left = `${left}%`;
+            span.style.animationDuration = `${duration}s`;
+            span.style.animationDelay = `${delay}s`;
+            span.style.fontSize = `${size}rem`;
+
+            container.appendChild(span);
+        }
+        
+        function checkSystemStatus(username = null) {
+            const dot = document.getElementById('status-dot');
+            const label = document.getElementById('status-label');
+            const iconBg = document.getElementById('status-icon-bg');
+            
+            if (!dot || !label || !iconBg) return; 
+            
+            let url = `${API_URL}?action=checkStatus&t=${new Date().getTime()}`;
+            if (username) url += `&username=${encodeURIComponent(username)}`;
+
+            try {
+                // Simulación de fetch, asumiendo que ya funciona correctamente
+                /* const response = await fetch(url, { redirect: 'follow' });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if(data.status === 'online') { */
+                        dot.classList.remove('bg-gray-400', 'bg-red-500'); dot.classList.add('bg-green-500');
+                        label.textContent = "En Línea"; label.classList.add('text-green-700');
+                        iconBg.classList.remove('bg-gray-100', 'text-gray-400', 'bg-purple-50', 'text-purple-600');
+                        iconBg.classList.add('bg-green-50', 'text-green-600');
+                    /* }
+                } */
+            } catch (error) { 
+                dot.classList.add('bg-red-500'); 
+                label.textContent = "Offline";
+                iconBg.classList.add('bg-red-50', 'text-red-600');
+            } 
+        }
+
+        function skipIntro(name) {
+            prefetchGradesData(); 
+            loginScreen.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            appContent.classList.add('flex', 'fade-in');
+            initApp(name);
+            removeInitialLoader();
+        }
+
+        function unlockInterface(name) {
+            loginCard.classList.add('fade-out');
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteText.textContent = randomQuote;
+
+            setTimeout(() => {
+                loginCard.classList.add('hidden'); 
+                quoteContainer.classList.remove('hidden');
+                quoteContainer.classList.add('fade-in');
+            }, 400);
+
+            setTimeout(() => {
+                loginScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loginScreen.classList.add('hidden');
+                    quoteContainer.classList.add('hidden'); 
+                    appContent.classList.remove('hidden');
+                    appContent.classList.add('flex', 'fade-in');
+                    initApp(name);
+                }, 500); 
+            }, 4000); 
+        }
+
+        function initApp(name) {
+            userNameDisplay.textContent = name || 'Usuario';
+            renderGrades();
+            startStatusCycle(name);
+            loadAnnouncements();
+            resetInactivityTimer(); 
+            setTimeout(matchWidths, 100); 
+        }
+        
+        function startStatusCycle(username) {
+            checkSystemStatus(username);
+            if (statusInterval) clearInterval(statusInterval);
+            statusInterval = setInterval(() => {
+                if (!document.hidden) {
+                    checkSystemStatus(username);
+                }
+            }, 60000); 
+        }
+
+        // --- FUNCIONES DE CALENDARIO (AÑADIDAS) ---
+        function toggleCalendarModal() {
+            if (calendarModal.classList.contains('hidden')) {
+                renderCalendar();
+                calendarModal.classList.remove('hidden');
+                document.body.classList.add('animations-paused');
+                requestAnimationFrame(() => {
+                    calendarModal.classList.remove('opacity-0');
+                    calendarModalContent.classList.remove('scale-95');
+                    calendarModalContent.classList.add('scale-100');
+                });
+            } else {
+                calendarModal.classList.add('opacity-0');
+                calendarModalContent.classList.remove('scale-100');
+                calendarModalContent.classList.add('scale-95');
+                document.body.classList.remove('animations-paused');
+                setTimeout(() => {
+                    calendarModal.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            const monthName = monthNames[currentCalMonth];
+            calMonthDisplay.textContent = monthName; // Usando calMonthDisplay
+            calYearDisplay.textContent = currentCalYear; // Usando calYearDisplay
+
+            // LÓGICA DE TAMAÑO DE FUENTE INTELIGENTE
+            if(monthName.length > 8) { // Meses largos (Septiembre, Noviembre, Diciembre)
+                calMonthDisplay.classList.remove('text-2xl');
+                calMonthDisplay.classList.add('text-lg');
+            } else {
+                calMonthDisplay.classList.remove('text-lg');
+                calMonthDisplay.classList.add('text-2xl'); // Fuente grande para meses cortos
+            }
+
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const totalCells = 42;
+            let dayCount = 1;
+            
+            for (let i = 0; i < totalCells; i++) {
+                const dayEl = document.createElement('div');
+                
+                if (i < firstDay || dayCount > daysInMonth) {
+                    dayEl.className = 'calendar-day empty'; // Usar la clase del calendario
+                    dayEl.innerHTML = '';
+                } else {
+                    dayEl.className = 'calendar-day group'; // Usar la clase del calendario
+                    const date = new Date(currentCalYear, currentCalMonth, dayCount);
+                    const dateString = `${currentCalMonth + 1}/${dayCount}/${currentCalYear}`;
+                    
+                    dayEl.innerHTML = `<span class="z-10 relative">${dayCount}</span>`;
+
+                    const isToday = new Date().toDateString() === date.toDateString();
+                    const eventText = calendarEvents[dateString];
+                    const isHoliday = nonWorkingDays.has(dateString);
+                    const isEdu = educationalHolidays.has(dateString);
+                    const isHoly = holyWeekDays.has(dateString);
+
+                    if (isToday) {
+                        dayEl.classList.add('current-day');
+                    } else if (isHoly) {
+                        dayEl.classList.add('holy-week');
+                    } else if (isHoliday) {
+                        dayEl.classList.add('holiday');
+                    } else if (isEdu) {
+                        dayEl.classList.add('educational');
+                    } else {
+                        dayEl.classList.add('text-gray-600');
+                    }
+
+                    if (eventText || isHoliday || isEdu || isHoly) {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot-indicator';
+                        if (!dayEl.classList.contains('holiday') && !dayEl.classList.contains('educational') && !dayEl.classList.contains('holy-week') && !dayEl.classList.contains('current-day')) {
+                            dot.style.backgroundColor = '#002060';
+                        }
+                        dayEl.appendChild(dot);
+                        dayEl.addEventListener('click', () => openEventDetailModal(date, eventText, isHoliday, isEdu, isHoly));
+                    }
+                    
+                    dayCount++;
+                }
+                calendarGrid.appendChild(dayEl);
+            }
+        }
+
+        function openEventDetailModal(date, text, isHoliday, isEdu, isHoly) {
+            const dateString = `${dayNames[date.getDay()]}, ${date.getDate()} de ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+            eventDetailDate.textContent = dateString;
+            eventDetailBody.innerHTML = '';
+
+            let contentHTML = '';
+            if (isHoly) contentHTML += `<span class="inline-block bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded mr-1 mb-2">Semana Santa</span>`;
+            if (isHoliday) contentHTML += `<span class="inline-block bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded mr-1 mb-2">Feriado</span>`;
+            if (isEdu) contentHTML += `<span class="inline-block bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded mr-1 mb-2">Escolar</span>`;
+
+            if (text) {
+                let formattedText = text
+                    .replace(/\(([^)]+)\)/g, '<span class="text-montessori-blue font-bold">($1)</span>');
+                contentHTML += `<p class="text-sm text-gray-700 leading-relaxed">${formattedText}</p>`;
+            } else if(isHoliday || isEdu || isHoly) {
+                 contentHTML += `<p class="text-sm text-gray-500 italic">Sin descripción detallada.</p>`;
+            }
+
+            eventDetailBody.innerHTML = contentHTML;
+            eventDetailModal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                eventDetailModal.classList.remove('opacity-0');
+                document.getElementById('event-detail-content').classList.remove('scale-95');
+                document.getElementById('event-detail-content').classList.add('scale-100');
+            });
+        }
+
+        function closeEventDetailModal() {
+            eventDetailModal.classList.add('opacity-0');
+            document.getElementById('event-detail-content').classList.remove('scale-100');
+            document.getElementById('event-detail-content').classList.add('scale-95');
+            setTimeout(() => {
+                eventDetailModal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Calendar Listeners
+        if (calPrevBtn) {
+            calPrevBtn.addEventListener('click', () => {
+                currentCalMonth--;
+                if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+                renderCalendar();
+            });
+        }
+        if (calNextBtn) {
+            calNextBtn.addEventListener('click', () => {
+                currentCalMonth++;
+                if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+                renderCalendar();
+            });
+        }
+        if (calendarModal) {
+            calendarModal.addEventListener('click', (e) => {
+                if(e.target === calendarModal) toggleCalendarModal();
+            });
+        }
+
+        window.onload = () => {
+            document.body.onmousemove = resetInactivityTimer;
+            document.body.onkeydown = resetInactivityTimer;
+            document.body.onclick = resetInactivityTimer;
+            window.addEventListener('resize', matchWidths);
+
+            matchWidths();
+            setTimeout(() => {
+                // Placeholder logic for checkSessionValidity
+                const sessionData = sessionStorage.getItem('pinceladas_session');
+                if (sessionData) {
+                    const session = JSON.parse(sessionData);
+                    skipIntro(session.name);
+                    resetInactivityTimer();
+                } else {
+                    const initialLoader = document.getElementById('initial-loader');
+                    if(initialLoader) {
+                        initialLoader.classList.add('opacity-0', 'pointer-events-none');
+                        setTimeout(() => { initialLoader.classList.add('hidden'); }, 700);
+                    }
+                }
+            }, 800);
+            
+            checkSystemStatus(); 
+            initDynamicTexts();
+            initAllParticles(); 
+            
+            bulletinIframe.onload = () => { iframeLoader.classList.add('hidden'); };
+            closeBulletinBtn.addEventListener('click', closeBulletinModal);
+            
+            if(studentsContainer) {
+                studentsContainer.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.btn-bulletin-action');
+                    if (btn && btn.dataset.link) {
+                        e.preventDefault(); 
+                        openBulletinModal(btn.dataset.link);
+                    }
+                });
+                
+                studentsContainer.addEventListener('mouseover', function(e) {
+                    const btn = e.target.closest('.btn-bulletin-action');
+                    if (btn && btn.dataset.link && !btn.dataset.prefetched) {
+                        prefetchBulletin(btn.dataset.link);
+                        btn.dataset.prefetched = "true";
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>
