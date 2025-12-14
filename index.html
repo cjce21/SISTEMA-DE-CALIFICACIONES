@@ -17,6 +17,7 @@
     <!-- Fuentes -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Chewy&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
     
+    <!-- Advertencia: Uso de CDN de Tailwind. En producción se recomienda compilar el CSS estático. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -48,6 +49,7 @@
                         'blob': 'blob 20s infinite alternate',
                         'diagonal-shift': 'diagonalShift 3s ease-in-out infinite alternate',
                         'random-shift': 'randomShift 3s ease-in-out infinite alternate', 
+                        'pulse-bg': 'pulseBg 4s infinite'
                     },
                     keyframes: {
                         blob: {
@@ -66,6 +68,10 @@
                         diagonalShift: {
                             '0%': { 'background-position': '0% 0%' },
                             '100%': { 'background-position': '100% 100%' },
+                        },
+                        pulseBg: {
+                            '0%, 100%': { 'background-color': 'rgba(254, 242, 242, 1)' }, /* Red-50 */
+                            '50%': { 'background-color': 'rgba(239, 246, 255, 1)' } /* Blue-50 */
                         }
                     }
                 }
@@ -82,15 +88,11 @@
             flex-direction: column;
         }
 
-        /* OPTIMIZACIÓN DE RENDERIZADO */
-        .animate-blob, .animate-random-shift, .animate-diagonal-shift, .marquee-content, #app-content, #view-home, #view-students {
-            will-change: transform, opacity;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
+        /* OPTIMIZACIÓN DE RENDERIZADO (will-change) */
+        .will-change-transform { will-change: transform; }
+        .will-change-opacity { will-change: opacity; }
 
-        /* MODO ALTO RENDIMIENTO */
+        /* MODO ALTO RENDIMIENTO (para cuando se abre un modal o la pestaña no está visible) */
         body.high-performance-mode .particles-container,
         body.high-performance-mode .animated-diagonal-background,
         body.high-performance-mode .grid-overlay {
@@ -129,31 +131,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* --- MARQUEE --- */
-        .marquee-wrapper {
-            display: flex;
-            overflow: hidden;
-            user-select: none;
-            mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-            align-items: center; 
-        }
-
-        .marquee-content {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center; 
-            justify-content: space-around;
-            min-width: 100%;
-            gap: 0; 
-            animation: scroll-seamless 50s linear infinite;
-            height: 100%; 
-        }
-
-        @keyframes scroll-seamless {
-            from { transform: translateX(0); }
-            to { transform: translateX(-100%); }
-        }
-
         /* --- ANIMACIONES GENERALES --- */
         @keyframes colorPulse { 
             0% { color: #9CA3AF; } 
@@ -234,6 +211,27 @@
         .logo-sm .text-colegio { font-size: 0.55rem; }
         .logo-sm .text-pinceladas { font-size: 1.3rem; }
         .logo-sm .text-montessori-sub { font-size: 0.55rem; padding: 1px 4px; }
+        
+        /* --- NÚMERO DE GRADO COMO MARCA DE AGUA (UI Refinamiento) --- */
+        .grade-card { position: relative; overflow: hidden; }
+        .grade-icon-overlay {
+            position: absolute;
+            top: 50%;
+            right: 5%;
+            transform: translateY(-50%);
+            font-size: 8rem; /* Grande */
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            opacity: 0.05; /* Muy transparente */
+            line-height: 1;
+            z-index: 0;
+            user-select: none;
+            transition: all 0.3s ease-out;
+        }
+        .grade-card:hover .grade-icon-overlay {
+            opacity: 0.08;
+            transform: translateY(-50%) scale(1.05);
+        }
 
         /* --- CALENDARIO STYLES --- */
         #calendarGrid {
@@ -296,9 +294,6 @@
         }
         .cal-nav-btn:hover { background-color: #EFF6FF; color: #C00000; transform: scale(1.1); }
         .cal-nav-btn:active { transform: scale(0.95); }
-
-        /* Modal Styles */
-        /* Eliminada la clase .modal-overlay personalizada porque ahora usamos clases de Tailwind directamente */
         
         /* --- FONDO ACADÉMICO Y PARTÍCULAS --- */
         .particles-container {
@@ -377,8 +372,9 @@
             <h2 id="quote-text" class="text-3xl md:text-5xl font-bold text-montessori-blue leading-tight font-montserrat drop-shadow-sm mb-4"></h2>
             <div class="h-1 w-24 bg-montessori-red rounded-full mx-auto"></div>
         </div>
+        <!-- MEJORA UI: Glassmorphism refinado (bg-white/70 backdrop-blur-3xl) -->
         <div id="login-card" class="relative z-20 w-full max-w-3xl mx-4 transition-all duration-700">
-            <div class="bg-white/90 backdrop-blur-xl border border-white/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[380px]">
+            <div class="bg-white/70 backdrop-blur-3xl border border-white/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[380px]">
                 <div class="w-full md:w-5/12 bg-gray-50/80 flex flex-col items-center justify-center p-6 border-b md:border-b-0 md:border-r border-gray-100 gap-4">
                     <div class="logo-container logo-lg cursor-default text-center transform scale-90 md:scale-100">
                         <div class="text-section flex flex-col items-center">
@@ -398,13 +394,15 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <svg class="w-4 h-4 text-gray-600 group-focus-within:text-montessori-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     </div>
-                                    <input type="text" id="username" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/20 outline-none transition-all duration-500 text-sm placeholder-gray-600" placeholder="Usuario">
+                                    <!-- MEJORA UI: transiciones en focus más suaves -->
+                                    <input type="text" id="username" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/40 outline-none transition-all duration-300 text-sm placeholder-gray-600" placeholder="Usuario">
                                 </div>
                                 <div class="relative group z-20">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <svg class="w-4 h-4 text-gray-600 group-focus-within:text-montessori-blue transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                     </div>
-                                    <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/20 outline-none transition-all duration-500 text-sm placeholder-gray-600" placeholder="Contraseña">
+                                    <!-- MEJORA UI: transiciones en focus más suaves -->
+                                    <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-800 focus:bg-white focus:border-montessori-blue focus:ring-2 focus:ring-montessori-blue/40 outline-none transition-all duration-300 text-sm placeholder-gray-600" placeholder="Contraseña">
                                 </div>
                             </div>
                         </div>
@@ -428,10 +426,10 @@
     </div>
 
     <!-- TIMEOUT -->
-    <div id="timeout-screen" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-blue-50 overflow-hidden opacity-0 transition-opacity duration-500 ease-out">
+    <div id="timeout-screen" class="fixed inset-0 z-[200] flex items-center justify-center bg-blue-50 overflow-hidden opacity-0 transition-opacity duration-500 ease-out hidden">
         <div class="animated-diagonal-background animate-diagonal-shift"></div>
         <div class="particles-container z-10"><div class="grid-overlay"></div></div>
-        <div class="relative z-20 bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white/50 max-w-lg w-full text-center transform transition-transform duration-500 scale-95" id="timeout-content">
+        <div class="relative z-20 bg-white/70 backdrop-blur-3xl p-8 rounded-3xl shadow-2xl border border-white/50 max-w-lg w-full text-center transform transition-transform duration-500 scale-95" id="timeout-content">
             <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-red-50/50">
                 <svg class="w-10 h-10 text-montessori-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
             </div>
@@ -461,7 +459,8 @@
 
     <!-- MODAL BOLETÍN -->
     <div id="bulletin-modal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-md opacity-0">
-        <div class="bg-white w-[95%] h-[90%] md:w-[90%] md:h-[90%] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform scale-100" id="bulletin-modal-content">
+        <!-- MEJORA UI: Glassmorphism en el fondo, contenido blanco -->
+        <div class="bg-white/95 w-[95%] h-[90%] md:w-[90%] md:h-[90%] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform scale-100" id="bulletin-modal-content">
             <div class="flex justify-between items-center px-6 py-3 bg-white border-b border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="bg-montessori-blue/10 p-2 rounded-lg">
@@ -490,10 +489,9 @@
     <!-- ================================ -->
     <!-- MODAL CALENDARIO PRINCIPAL -->
     <!-- ================================ -->
-    <!-- MODIFICADO: Ahora usa bg-black/50 y backdrop-blur-sm para igualar el efecto del acceso denegado -->
     <div id="calendar-modal" class="hidden fixed inset-0 z-[260] flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-200">
         <!-- Contenido Modal -->
-        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-card border border-gray-200 overflow-hidden flex flex-col md:flex-row h-auto md:h-[500px] mx-4 transform scale-95 transition-transform duration-200" id="calendar-modal-content">
+        <div class="bg-white/90 backdrop-blur-md w-full max-w-5xl rounded-3xl shadow-card border border-gray-200 overflow-hidden flex flex-col md:flex-row h-auto md:h-[500px] mx-4 transform scale-95 transition-transform duration-200" id="calendar-modal-content">
             <!-- BOTÓN CERRAR -->
             <button onclick="toggleCalendarModal()" class="absolute top-4 right-4 z-20 p-2 bg-white/80 hover:bg-white rounded-full text-gray-500 hover:text-red-500 transition-colors shadow-sm">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -503,7 +501,6 @@
             <div class="w-full md:w-1/3 bg-gray-50 p-6 md:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-gray-100 relative">
                 <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-montessori-blue to-montessori-red"></div>
                 
-                <!-- LOGO ELIMINADO -->
                 <div class="h-4 mb-6"></div>
 
                 <div class="flex flex-col items-start gap-2 mb-6 md:mb-0">
@@ -546,9 +543,9 @@
     </div>
 
     <!-- MODAL DETALLE EVENTO (Z-Index mayor que el calendario) -->
-    <!-- MODIFICADO: Ahora usa bg-black/50 y backdrop-blur-sm para igualar el efecto del acceso denegado -->
     <div id="event-detail-modal" class="hidden fixed inset-0 z-[270] flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-200 overflow-hidden" id="event-detail-content">
+        <!-- MEJORA UI: Glassmorphism refinado -->
+        <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform scale-95 transition-transform duration-200 overflow-hidden" id="event-detail-content">
             <div class="bg-montessori-blue p-5 text-white relative">
                 <button onclick="closeEventDetailModal()" class="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-full transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 <h3 id="eventDetailDate" class="text-lg font-bold font-montserrat"></h3>
@@ -562,7 +559,7 @@
 
     <!-- APP CONTENT -->
     <div id="app-content" class="hidden flex-col h-full w-full relative z-0 opacity-0 transition-opacity duration-1000 overflow-hidden">
-        <div id="academic-background" class="particles-container z-0"><div class="grid-overlay"></div></div>
+        <div id="academic-background" class="particles-container z-0 will-change-transform"><div class="grid-overlay"></div></div>
         <!-- HEADER -->
         <header class="bg-white/90 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50 h-14 flex-shrink-0 w-full">
             <div class="w-full px-6 h-full flex justify-between items-center">
@@ -579,17 +576,13 @@
                         <span id="user-name-display" class="text-sm font-black text-montessori-blue leading-tight">...</span>
                     </div>
                     
-                    <!-- BOTÓN PLANIFICADOR -->
+                    <!-- BOTONES DE NAVEGACIÓN RÁPIDA -->
                     <a href="https://cjce21.github.io/PLANIFICADOR/" target="_blank" class="mr-3 p-2 rounded-full bg-blue-50 text-montessori-blue hover:bg-montessori-blue hover:text-white transition-all duration-200 group flex items-center justify-center" title="Planificador de Clases">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                     </a>
-
-                    <!-- BOTÓN EXAMINADOR (ACTUALIZADO: Icono de evaluación y color azul) -->
                     <a href="https://cjce21.github.io/EXAMINADOR/" target="_blank" class="mr-3 p-2 rounded-full bg-blue-50 text-montessori-blue hover:bg-montessori-blue hover:text-white transition-all duration-200 group flex items-center justify-center" title="Creación de Evaluaciones">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-9 7l3 3 6-6"></path></svg>
                     </a>
-
-                    <!-- BOTÓN CALENDARIO -->
                     <button onclick="toggleCalendarModal()" class="mr-3 p-2 rounded-full bg-blue-50 text-montessori-blue hover:bg-montessori-blue hover:text-white transition-all duration-200 group" title="Ver Calendario">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </button>
@@ -609,8 +602,8 @@
         <!-- MAIN -->
         <main class="flex-1 w-full px-6 py-6 no-scrollbar overflow-y-auto bg-transparent relative z-10">
             <div class="w-full">
-                <div id="dashboard-metrics" class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in">
-                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div id="dashboard-metrics" class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in will-change-opacity">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 will-change-transform">
                         <div class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-blue-50 text-blue-600 flex items-center justify-center">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         </div>
@@ -619,7 +612,7 @@
                             <p class="text-xl font-bold text-slate-800 leading-none">15 de Diciembre de 2025</p>
                         </div>
                     </div>
-                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 will-change-transform">
                          <div class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-montessori-red/10 text-montessori-red flex items-center justify-center">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
@@ -628,7 +621,8 @@
                             <p class="text-xl font-bold text-slate-800 leading-none">06 de Febrero de 2026</p>
                         </div>
                     </div>
-                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft flex items-center gap-5 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 will-change-transform">
+                        <!-- MEJORA: CLASES DINÁMICAS MANEJADAS EN JS PARA CONEXIÓN -->
                         <div id="status-icon-bg" class="h-14 w-14 flex-shrink-0 rounded-[1.2rem] bg-purple-50 text-purple-600 flex items-center justify-center transition-colors">
                              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
                         </div>
@@ -642,7 +636,7 @@
                     </div>
                 </div>
 
-                <div id="view-home" class="max-w-[1440px] mx-auto fade-in h-full flex flex-col pb-8 w-full">
+                <div id="view-home" class="max-w-[1440px] mx-auto fade-in h-full flex flex-col pb-8 w-full will-change-opacity">
                     <div class="flex items-center gap-3 mb-4 pb-1">
                         <div class="h-6 w-1.5 bg-montessori-red rounded-full"></div>
                         <h2 class="text-lg font-bold text-montessori-red">Nivel Primaria</h2>
@@ -655,37 +649,51 @@
                     </div>
                     <div id="grid-secundaria" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-                    <div id="announcement-banner" class="hidden mt-8 rounded-xl overflow-hidden shadow-sm border border-montessori-red fade-in relative bg-white w-full">
-                        <div class="flex items-center relative h-12">
-                            <div class="absolute left-0 top-0 h-full z-20 bg-white pr-4 pl-4 flex items-center gap-2 border-r border-montessori-red shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                                <div class="bg-montessori-red/10 p-1.5 rounded-full animate-pulse">
-                                    <svg class="w-4 h-4 text-montessori-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    <!-- MEJORA UI: Banner de Anuncios Estático (Reemplaza al Marquee) -->
+                    <div id="announcement-banner" class="hidden mt-8 rounded-xl overflow-hidden shadow-sm border border-montessori-red fade-in relative bg-white w-full animate-pulse-bg">
+                        <div class="flex items-center p-3">
+                            <div class="flex items-center gap-2 border-r border-montessori-red/30 pr-4 flex-shrink-0">
+                                <div class="bg-montessori-red/10 p-1.5 rounded-full">
+                                    <svg class="w-5 h-5 text-montessori-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
                                 </div>
-                                <span class="text-xs font-bold tracking-widest uppercase text-montessori-red">Avisos</span>
+                                <span class="text-xs font-bold tracking-widest uppercase text-montessori-red">AVISO</span>
                             </div>
-                            <div class="marquee-wrapper w-full h-full pl-[110px]"> 
-                                <div id="marquee-track" class="marquee-content font-bold text-sm text-montessori-blue"></div>
-                                <div id="marquee-track-clone" class="marquee-content font-bold text-sm text-montessori-blue" aria-hidden="true"></div>
+                            <div class="flex-1 min-w-0 pl-4"> 
+                                <p id="announcement-text" class="text-sm font-semibold text-montessori-blue truncate">...</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="view-students" class="hidden fade-in w-full">
+                <div id="view-students" class="hidden fade-in w-full will-change-opacity">
                     <div class="w-full"> 
+                        <!-- MEJORA UX: Breadcrumbs y Selector Rápido de Grado -->
                         <div class="flex items-center gap-2 mb-6 text-sm text-gray-600">
-                            <button onclick="showHome()" class="hover:text-montessori-blue hover:underline flex items-center gap-1 font-medium transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                                Volver a Grados
+                            <button onclick="showHome()" class="hover:text-montessori-blue hover:underline flex items-center gap-1 font-medium transition-colors breadcrumb-link">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                Inicio
                             </button>
                             <span>/</span>
-                            <span id="current-grade-title" class="font-bold text-montessori-blue">...</span>
+                            <span id="breadcrumb-level" class="font-medium">...</span>
+                            <span>/</span>
+                            <span id="breadcrumb-grade" class="font-bold text-montessori-blue">...</span>
                         </div>
+                        
                         <div class="w-full">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="font-bold text-gray-700 text-lg">Listado Oficial</h3>
-                                <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
-                                     <span class="text-xs font-medium loading-text">Actualizando</span>
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                                <h3 class="font-bold text-gray-700 text-lg flex-shrink-0">Listado Oficial</h3>
+                                <div class="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
+                                    <div id="grade-quick-switcher" class="relative w-full sm:w-auto">
+                                        <!-- Selector de Grado se insertará aquí -->
+                                    </div>
+                                    <div class="relative w-full sm:w-64">
+                                        <!-- MEJORA UX: Buscador en tiempo real -->
+                                        <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
+                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </div>
+                                    <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
+                                        <span class="text-xs font-medium loading-text">Actualizando</span>
+                                    </div>
                                 </div>
                             </div>
                             <div id="students-list-container" class="space-y-2"></div>
@@ -705,7 +713,8 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwnNusWP5LlxipynwTszW7bz70GNZa4n3RfEm-8tsM7nFktVeNvXATqz8HddKY_2YK9/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbzcj7pjOOF39HJJW7N3ShylQrwHK8tloToznQKNgfHCFVedmKnK8kmwuq8omoXNNTL-/exec"; 
+        const CACHE_KEY = 'pinceladas_cache_students'; // Clave para el almacenamiento en sesión
         
         // --- ELEMENTOS GENERALES ---
         const loginScreen = document.getElementById('login-screen');
@@ -723,40 +732,61 @@
         const accessDeniedModal = document.getElementById('access-denied-modal');
         const accessDeniedTitle = document.getElementById('modal-title'); 
         const accessDeniedMessage = document.getElementById('access-denied-message'); 
-        const accessDeniedButton = accessDeniedModal.querySelector('button'); 
         const initialLoader = document.getElementById('initial-loader');
         
+        // --- VISTA DE ESTUDIANTES ---
+        const studentsContainer = document.getElementById('students-list-container');
+        const searchInput = document.getElementById('student-search-input');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // --- BREADCRUMBS ---
+        const breadcrumbLevel = document.getElementById('breadcrumb-level');
+        const breadcrumbGrade = document.getElementById('breadcrumb-grade');
+        const gradeQuickSwitcher = document.getElementById('grade-quick-switcher');
+
+        // --- ANUNCIO ---
+        const announcementBanner = document.getElementById('announcement-banner');
+        const announcementText = document.getElementById('announcement-text');
+
         // --- MODAL DE BOLETÍN ---
         const bulletinModal = document.getElementById('bulletin-modal');
-        const bulletinModalContent = document.getElementById('bulletin-modal-content');
         const bulletinIframe = document.getElementById('bulletin-iframe');
         const iframeLoader = document.getElementById('iframe-loader');
         const externalLinkBtn = document.getElementById('external-link-btn');
         const closeBulletinBtn = document.getElementById('close-bulletin-btn');
-        const studentsContainer = document.getElementById('students-list-container');
 
         // --- MODAL CALENDARIO ---
         const calendarModal = document.getElementById('calendar-modal');
         const calendarModalContent = document.getElementById('calendar-modal-content');
-        
         const calMonthDisplay = document.getElementById('calMonthDisplay');
         const calYearDisplay = document.getElementById('calYearDisplay');
         const calendarGrid = document.getElementById('calendarGrid');
         const calPrevBtn = document.getElementById('calPrevBtn');
         const calNextBtn = document.getElementById('calNextBtn');
         const eventDetailModal = document.getElementById('event-detail-modal');
-        const eventDetailContent = document.getElementById('event-detail-content');
         const eventDetailDate = document.getElementById('eventDetailDate');
         const eventDetailBody = document.getElementById('eventDetailBody');
 
-        let userPermissions = '';
+        // --- VARIABLES DE ESTADO ---
+        let userPermissions = []; 
+        let currentGradeData = []; // Almacena la lista completa del grado actual
+        let currentGradeName = '';
+        let currentGradeLevel = '';
+        let allAccessibleGrades = []; // Lista de todos los grados a los que el usuario tiene acceso
+        let isSwitcherOpen = false; // Estado del nuevo selector desplegable
+
         let currentCalMonth = new Date().getMonth();
         let currentCalYear = new Date().getFullYear();
+
+        let inactivityTimer;
+        let currentUserTimeoutMs = 1.5 * 60 * 1000; 
+        let statusInterval; 
 
         // --- DATOS GLOBALES ---
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
+        // --- CALENDARIO COMPLETO RESTAURADO ---
         const calendarEvents = {
             '8/13/2025': 'Bienvenida y jornada de formación y planificación docente',
             '8/14/2025': 'Jornada de formación y planificación docente (+ Taller IA)',
@@ -924,19 +954,7 @@
             '3/29/2026', '3/30/2026', '3/31/2026', '4/1/2026', '4/2/2026',
             '4/3/2026', '4/4/2026'
         ]);
-
-        // --- FUNCIONES ---
-
-        function initDynamicTexts(name) {
-            if (name) userNameDisplay.textContent = name;
-            accessDeniedTitle.textContent = 'Acceso Restringido por Permisos';
-            accessDeniedMessage.textContent = 'El acceso a este curso ha sido denegado. El perfil de usuario actual no tiene asignados los permisos necesarios para visualizar la información de este grado. Para asistencia o revisión de permisos, contacte al Tío Christopher.';
-            accessDeniedButton.textContent = 'Aceptar y Continuar';
-            document.getElementById('timeout-title').textContent = 'Sesión Finalizada por Seguridad';
-            document.getElementById('timeout-message').textContent = 'Para proteger la confidencialidad de la información académica, la sesión ha finalizado tras detectar un periodo de inactividad. Presione el botón para restablecer el acceso.';
-            document.querySelector('#timeout-content button').textContent = 'Restablecer Sesión';
-        }
-
+        
         const quotes = [
             "Lo más importante es que lo más importante sea lo más importante.",
             "Empieza cada día con un fin en mente.",
@@ -962,13 +980,20 @@
             { nombre: "3º Grado", nivel: "Secundaria", icon: "III" }
         ];
 
-        const gradePromises = {}; 
-        let inactivityTimer;
-        let currentUserTimeoutMs = 1.5 * 60 * 1000; 
-        let statusInterval; 
+        const allGradesMaster = [...gradosPrimaria, ...gradosSecundaria];
+        // ... (Mismo contenido para todos los datos de calendario)
+
+        // --- FUNCIONES CORE ---
+
+        function initDynamicTexts(name) {
+            if (name) userNameDisplay.textContent = name;
+            accessDeniedTitle.textContent = 'Acceso Restringido por Permisos';
+            accessDeniedMessage.textContent = 'El acceso a este curso ha sido denegado. El perfil de usuario actual no tiene asignados los permisos necesarios para visualizar la información de este grado. Para asistencia o revisión de permisos, contacte al Tío Christopher.';
+            document.getElementById('timeout-title').textContent = 'Sesión Finalizada por Seguridad';
+            document.getElementById('timeout-message').textContent = 'Para proteger la confidencialidad de la información académica, la sesión ha finalizado tras detectar un periodo de inactividad. Presione el botón para restablecer el acceso.';
+        }
 
         function matchWidths() {
-            // Ajuste del logo principal (login y header)
             document.querySelectorAll('.logo-container').forEach(container => {
                 const pinceladas = container.querySelector('.text-pinceladas');
                 const montessori = container.querySelector('.text-montessori-sub');
@@ -980,35 +1005,30 @@
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
+            // Solo reinicia si el usuario está logueado y no en la pantalla de timeout
             if (loginScreen.classList.contains('hidden') && timeoutScreen.classList.contains('hidden')) { 
                 inactivityTimer = setTimeout(() => handleSessionTimeout(), currentUserTimeoutMs);
             }
         }
 
-        function handleSessionTimeout() {
-            // IMPORTANTE: Reactivar las animaciones de fondo (quitar modo alto rendimiento)
-            // Esto corrige el problema de que el fondo se vea blanco si hay un boletín abierto
-            document.body.classList.remove('high-performance-mode');
+        // MEJORA: Detener animaciones cuando la pestaña está inactiva
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                document.body.classList.add('high-performance-mode');
+            } else {
+                if (loginScreen.classList.contains('hidden')) {
+                    document.body.classList.remove('high-performance-mode');
+                }
+            }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
-            // Cerrar cualquier modal abierto inmediatamente
-            if (!bulletinModal.classList.contains('hidden')) {
-                closeBulletinModal();
-            }
-            
-            if (!calendarModal.classList.contains('hidden')) {
-                // Lógica manual de cierre para evitar toggle
-                calendarModal.classList.add('opacity-0');
-                calendarModalContent.classList.remove('scale-100');
-                calendarModalContent.classList.add('scale-95');
-                // document.body.classList.remove('animations-paused'); // Ya no necesario aquí porque quitamos el high-performance-mode arriba
-                setTimeout(() => {
-                    calendarModal.classList.add('hidden');
-                }, 200);
-            }
-            
-            if (!eventDetailModal.classList.contains('hidden')) {
-                closeEventDetailModal();
-            }
+        function handleSessionTimeout() {
+            // Lógica para el timeout...
+            document.body.classList.remove('high-performance-mode');
+            if (!bulletinModal.classList.contains('hidden')) { closeBulletinModal(); }
+            if (!calendarModal.classList.contains('hidden')) { toggleCalendarModal(true); } // Forzar cierre
+            if (!eventDetailModal.classList.contains('hidden')) { closeEventDetailModal(); }
 
             sessionStorage.removeItem('pinceladas_session');
             timeoutScreen.classList.remove('hidden');
@@ -1029,6 +1049,7 @@
         }
 
         function checkSessionValidity() {
+            // Lógica para verificar sesión...
             const sessionData = sessionStorage.getItem('pinceladas_session');
             if (sessionData) {
                 const session = JSON.parse(sessionData);
@@ -1039,7 +1060,8 @@
                     removeInitialLoader();
                 } else {
                     currentUserTimeoutMs = sessionTimeout;
-                    userPermissions = session.permissions || ''; 
+                    userPermissions = (session.permissions || '').toUpperCase().split(','); 
+                    allAccessibleGrades = getAccessibleGrades(userPermissions);
                     skipIntro(session.name);
                     resetInactivityTimer();
                 }
@@ -1076,10 +1098,10 @@
             updateLoginStatus('loading', 'Verificando credenciales...');
             btnText.classList.add('opacity-0');
             btnLoader.classList.remove('hidden');
-            btnLogin.classList.add('cursor-not-allowed');
             btnLogin.disabled = true;
 
             try {
+                // Conexión real a Google Apps Script
                 const response = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(usernameInput)}&password=${encodeURIComponent(passwordInput)}`, {
                     redirect: "follow"
                 });
@@ -1091,12 +1113,15 @@
                 if (data.success) {
                     updateLoginStatus('success', '¡Acceso Autorizado! Redirigiendo...');
                     currentUserTimeoutMs = (data.timeout || 1.5) * 60 * 1000;
-                    userPermissions = data.permissions || ''; 
                     
+                    const perms = (data.permissions || '').toUpperCase();
+                    userPermissions = perms.split(',');
+                    allAccessibleGrades = getAccessibleGrades(userPermissions); // Inicializar lista de grados accesibles
+
                     sessionStorage.setItem('pinceladas_session', JSON.stringify({
                         auth: true,
                         name: data.name,
-                        permissions: data.permissions, 
+                        permissions: perms, 
                         timeout: data.timeout,
                         loginTime: new Date().getTime()
                     }));
@@ -1109,6 +1134,7 @@
                         unlockInterface(data.name);
                     }, 1000);
                 } else {
+                    // Si data.success es false (credenciales incorrectas)
                     throw new Error('Credenciales'); 
                 }
             } catch (error) {
@@ -1118,64 +1144,66 @@
                     console.warn("Login fetch error:", error);
                     updateLoginStatus('error', 'Error de conexión. Intente de nuevo.');
                 }
-
-                btnText.classList.remove('opacity-0');
-                btnLoader.classList.add('hidden');
-                btnLogin.classList.remove('cursor-not-allowed');
-                btnLogin.disabled = false;
                 if (navigator.vibrate) navigator.vibrate(200);
             } finally {
                 document.getElementById('password').value = '';
+                btnText.classList.remove('opacity-0');
+                btnLoader.classList.add('hidden');
+                btnLogin.disabled = false;
             }
         }
 
-        function checkPermissions(gradeName, level) {
-            const sessionData = sessionStorage.getItem('pinceladas_session');
-            if (!sessionData) return false;
-            
-            const session = JSON.parse(sessionData);
-            const userPerms = (session.permissions || "").toUpperCase().trim();
-            
-            if (userPerms === 'TODO' || userPerms === 'ADMIN') return true;
+        // --- MEJORA: Funciones de Permisos y Caching ---
 
-            const g = gradeName.toUpperCase(); 
+        function checkPermissions(gradeName, level, permissions) {
+            const userPerms = permissions || userPermissions;
+            if (userPerms.includes('TODO') || userPerms.includes('ADMIN')) return true;
+
+            const g = gradeName.toUpperCase().replace(' GRADO', ''); 
             const l = (level || "").toUpperCase();     
 
-            if (userPerms.includes(`${g} ${l}`)) return true; 
-            
-            const shortGrade = g.replace(' GRADO', ''); 
-            if (userPerms.includes(`${shortGrade} ${l}`)) return true;
-
-            if (userPerms.includes(g)) return true;
+            if (userPerms.some(p => p.trim() === `${g} ${l}`.trim())) return true;
+            if (userPerms.some(p => p.trim() === g.trim())) return true;
 
             return false;
         }
 
-        function closeAccessDenied() {
-            accessDeniedModal.classList.remove('opacity-100');
-            accessDeniedModal.classList.add('opacity-0');
-            setTimeout(() => {
-                accessDeniedModal.classList.add('hidden');
-            }, 300);
+        function getAccessibleGrades(permissions) {
+            return allGradesMaster.filter(g => checkPermissions(g.nombre, g.nivel, permissions));
         }
 
+        function getCachedData() {
+            try {
+                return JSON.parse(sessionStorage.getItem(CACHE_KEY)) || {};
+            } catch (e) {
+                console.error("Error retrieving cache:", e);
+                return {};
+            }
+        }
+
+        function setCachedData(gradeKey, data) {
+            try {
+                const cache = getCachedData();
+                cache[gradeKey] = data;
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+            } catch (e) {
+                console.error("Error setting cache:", e);
+            }
+        }
+        
+        // --- MEJORA: Prefetch de Datos a Cache ---
         function prefetchGradesData() {
-            const allGrades = [...gradosPrimaria, ...gradosSecundaria];
-            allGrades.forEach(g => {
-                if (checkPermissions(g.nombre, g.nivel)) {
-                    const key = `${g.nombre}-${g.nivel}`;
-                    gradePromises[key] = fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(g.nombre)}&level=${encodeURIComponent(g.nivel)}&t=${new Date().getTime()}`, { redirect: 'follow' })
-                        .then(response => response.json())
-                        .catch(error => []);
+            allAccessibleGrades.forEach(g => {
+                const key = `${g.nombre}-${g.nivel}`;
+                // Solo si no está ya en caché, inicia el fetch
+                if (!getCachedData()[key]) {
+                    fetchStudentData(g.nombre, g.nivel, key, false);
                 }
             });
         }
-
+        
+        // --- ELIMINACIÓN DE SIMULACIÓN Y REVISIÓN DE ANUNCIOS ---
         async function loadAnnouncements() {
-            const banner = document.getElementById('announcement-banner');
-            const track1 = document.getElementById('marquee-track');
-            const track2 = document.getElementById('marquee-track-clone');
-            
             try {
                 const response = await fetch(`${API_URL}?action=getAnnouncements`, { redirect: "follow" });
                 
@@ -1183,80 +1211,72 @@
 
                 const announcements = await response.json();
                 
-                if (announcements && announcements.length > 0) {
-                    const rawText = announcements.map(a => `<span>${a.mensaje}</span>`).join('<span class="mx-6 text-montessori-red/50 text-lg font-light">|</span>');
-                    if(!rawText.trim()) { banner.classList.add('hidden'); return; }
-
-                    const separator = '<span class="mx-6 text-montessori-red/50 text-lg font-light">|</span>';
-                    const repeatedBlock = `${rawText} ${separator} ${rawText} ${separator} ${rawText} ${separator}`;
-
-                    track1.innerHTML = repeatedBlock;
-                    track2.innerHTML = repeatedBlock; 
-                    banner.classList.remove('hidden'); 
+                if (announcements && announcements.length > 0 && announcements[0].mensaje) {
+                    announcementText.textContent = announcements[0].mensaje;
+                    announcementBanner.classList.remove('hidden'); 
                 } else {
-                    banner.classList.add('hidden'); 
+                    // Ocultar si la respuesta es vacía o mal formada
+                    announcementBanner.classList.add('hidden'); 
                 }
             } catch (e) {
-                banner.classList.add('hidden');
+                // Ocultar si hay un error de conexión
+                console.warn("Error al cargar anuncios. La API puede estar inactiva o no devolver datos.", e);
+                announcementBanner.classList.add('hidden');
             }
         }
 
         function logout() {
             sessionStorage.removeItem('pinceladas_session');
+            sessionStorage.removeItem(CACHE_KEY); // Limpiar caché al cerrar sesión
             location.reload();
         }
 
+        // --- MEJORA: Tarjeta de Grado Refinada (UI) ---
         function renderGrades() {
             const pContainer = document.getElementById('grid-primaria');
             const sContainer = document.getElementById('grid-secundaria');
             if(!pContainer || !sContainer) return; 
 
-            const createCard = (g, colorClass, borderClass) => {
+            const createCard = (g, colorClass, borderClass, bgColorClass, iconColorClass) => {
                 const hasPermission = checkPermissions(g.nombre, g.nivel);
+                const gradeKey = `${g.nombre}-${g.nivel}`;
                 
-                const baseClasses = "cursor-pointer bg-white border rounded-xl p-6 flex justify-between items-center transition-all duration-300 group transform will-change-transform";
+                const baseClasses = "grade-card cursor-pointer bg-white border rounded-xl p-6 flex justify-between items-center transition-all duration-300 group transform will-change-transform relative z-10";
                 let finalClasses = baseClasses;
-                let finalAction = `onclick="loadStudents('${g.nombre}', '${g.nivel}')"`;
+                let finalAction = `onclick="loadStudents('${g.nombre}', '${g.nivel}')" data-grade-key="${gradeKey}"`;
                 
-                let iconClasses = `h-10 w-10 rounded-lg flex items-center justify-center font-bold text-lg transition-colors`;
-                let gradeClasses = `text-xl font-bold transition-colors`;
+                let gradeClasses = `text-xl font-bold transition-colors relative z-10`;
                 
                 if (hasPermission) {
                     finalClasses += ` ${borderClass} hover:shadow-lg hover:-translate-y-1`;
                     gradeClasses += ` text-gray-800 group-hover:text-black`;
-                    
-                    if (colorClass === 'red') {
-                        iconClasses += ' bg-red-50 text-montessori-red';
-                    } else {
-                        iconClasses += ' bg-blue-50 text-montessori-blue';
-                    }
                 } else {
                     finalClasses += ` border-gray-100 opacity-50 cursor-not-allowed hover:shadow-none`;
                     gradeClasses += ` text-gray-600`;
-                    iconClasses += ' bg-gray-50 text-gray-600';
                     finalAction = `onclick="showAccessDeniedMessage()"`;
                 }
+                
+                // Overlay de icono/número como marca de agua
+                const overlayColor = colorClass === 'red' ? 'text-montessori-red' : 'text-montessori-blue';
+                const iconOverlay = `<div class="grade-icon-overlay ${overlayColor}">${g.icon}</div>`;
 
                 return `
                     <div ${finalAction} class="${finalClasses}">
                          <div>
-                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Grado</p>
+                            <p class="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1 relative z-10">${g.nivel}</p>
                             <h3 class="${gradeClasses}">${g.nombre}</h3>
                          </div>
-                         <div class="${iconClasses}">
-                            ${g.icon}
-                         </div>
+                         ${iconOverlay}
                     </div>
                 `;
             };
             
-            pContainer.innerHTML = gradosPrimaria.map(g => createCard(g, 'red', 'border-montessori-red')).join('');
-            sContainer.innerHTML = gradosSecundaria.map(g => createCard(g, 'blue', 'border-montessori-blue')).join('');
+            pContainer.innerHTML = gradosPrimaria.map(g => createCard(g, 'red', 'border-montessori-red', 'bg-red-50', 'text-montessori-red')).join('');
+            sContainer.innerHTML = gradosSecundaria.map(g => createCard(g, 'blue', 'border-montessori-blue', 'bg-blue-50', 'text-montessori-blue')).join('');
         }
         
         function showAccessDeniedMessage() {
             initDynamicTexts();
-
             accessDeniedModal.classList.remove('hidden');
             setTimeout(() => {
                 accessDeniedModal.classList.remove('opacity-0', 'scale-95');
@@ -1269,8 +1289,106 @@
             document.getElementById('dashboard-metrics').classList.remove('hidden');
             document.getElementById('view-students').classList.add('hidden');
             
-            // REACTIVAR ANIMACIONES AL VOLVER AL HOME
+            // Reactivar animaciones de fondo al volver al home
             document.body.classList.remove('high-performance-mode');
+            searchInput.value = '';
+        }
+
+        // --- MEJORA: Fetch de Datos con Caching ---
+        async function fetchStudentData(grade, level, key, showLoader = true) {
+            if (showLoader) loadingIndicator.classList.remove('hidden');
+            
+            try {
+                // 1. Intentar cargar desde la caché
+                const cached = getCachedData()[key];
+                if (cached) {
+                    return cached;
+                }
+                
+                // 2. Si no hay caché, hacer fetch
+                const response = await fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(grade)}&level=${encodeURIComponent(level)}&t=${new Date().getTime()}`, { redirect: 'follow' });
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    setCachedData(key, data); // Guardar en caché
+                    return data;
+                }
+                return [];
+
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                return [];
+            } finally {
+                if (showLoader) loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // --- NUEVAS FUNCIONES PARA EL SELECTOR CUSTOM ---
+
+        function toggleSwitcher(forceClose) {
+            const dropdown = document.getElementById('switcher-dropdown');
+            const icon = document.querySelector('#grade-quick-switcher svg');
+            
+            if (forceClose || isSwitcherOpen) {
+                if (dropdown) dropdown.classList.replace('opacity-100', 'opacity-0');
+                if (icon) icon.classList.replace('rotate-180', 'rotate-0');
+                setTimeout(() => { if (dropdown) dropdown.classList.add('hidden'); }, 150);
+                isSwitcherOpen = false;
+            } else {
+                if (dropdown) dropdown.classList.remove('hidden');
+                setTimeout(() => { 
+                    if (dropdown) dropdown.classList.replace('opacity-0', 'opacity-100');
+                    if (icon) icon.classList.replace('rotate-0', 'rotate-180');
+                }, 10);
+                isSwitcherOpen = true;
+            }
+        }
+
+        function handleGradeSwitch(grade, level) {
+            toggleSwitcher(true); // Close the dropdown
+            loadStudents(grade, level);
+        }
+        
+        // --- MEJORA: Función para Renderizar Selector Rápido de Grado CUSTOM ---
+        function renderGradeSelector(currentGradeKey) {
+            const gradeSwitcherContainer = document.getElementById('grade-quick-switcher');
+            
+            // Determinar current grade details for the button text
+            const currentGrade = allAccessibleGrades.find(g => `${g.nombre}-${g.nivel}` === currentGradeKey);
+            const buttonText = currentGrade ? `${currentGrade.nombre} - ${currentGrade.nivel}` : 'Seleccionar Grado';
+            const gradeColor = currentGrade && currentGrade.nivel === 'Primaria' ? 'border-montessori-red text-montessori-red hover:bg-red-50' : 'border-montessori-blue text-montessori-blue hover:bg-blue-50';
+
+            // Estructura del botón principal
+            let html = `
+                <button onclick="toggleSwitcher()" class="flex items-center justify-between px-4 py-2 text-sm font-bold rounded-lg border-2 ${gradeColor} transition-all duration-200 w-full sm:w-48 shadow-sm active:scale-[0.99]" title="Cambiar de Grado">
+                    <span>${buttonText}</span>
+                    <svg class="w-4 h-4 ml-2 transition-transform transform ${isSwitcherOpen ? 'rotate-180' : 'rotate-0'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="switcher-dropdown" class="absolute left-0 sm:left-auto sm:right-0 mt-2 w-full sm:w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 z-50 origin-top-right transition-all duration-150 transform opacity-0 scale-95 hidden">
+            `;
+
+            allAccessibleGrades.forEach(g => {
+                const gradeKey = `${g.nombre}-${g.nivel}`;
+                const isActive = gradeKey === currentGradeKey;
+                const itemColor = g.nivel === 'Primaria' ? 'hover:bg-red-50 text-montessori-red' : 'hover:bg-blue-50 text-montessori-blue';
+                
+                html += `
+                    <button onclick="handleGradeSwitch('${g.nombre}', '${g.nivel}')" 
+                            class="block w-full text-left px-4 py-2 text-sm font-medium transition-colors ${itemColor} ${isActive ? 'bg-gray-100 font-extrabold' : 'text-gray-700'}" 
+                            ${isActive ? 'disabled' : ''}>
+                        ${g.nombre} - ${g.nivel}
+                        ${isActive ? '<span class="text-xs text-gray-500 font-normal">(Actual)</span>' : ''}
+                    </button>
+                `;
+            });
+
+            html += `</div>`;
+            gradeSwitcherContainer.innerHTML = html;
+
+            // Restablecer el estado visual si estaba abierto antes del render
+            if (isSwitcherOpen) {
+                 document.getElementById('switcher-dropdown').classList.remove('hidden', 'opacity-0', 'scale-95');
+            }
         }
 
         async function loadStudents(grade, level) {
@@ -1279,6 +1397,10 @@
                 return; 
             }
 
+            currentGradeName = grade;
+            currentGradeLevel = level;
+            const gradeKey = `${grade}-${level}`;
+
             // OPTIMIZACIÓN AGRESIVA: MATAR ANIMACIONES DE FONDO
             document.body.classList.add('high-performance-mode');
 
@@ -1286,34 +1408,83 @@
             document.getElementById('dashboard-metrics').classList.add('hidden');
             document.getElementById('view-students').classList.remove('hidden');
             
-            const titleEl = document.getElementById('current-grade-title');
-            titleEl.textContent = `${grade} - ${level}`;
-            titleEl.className = `font-bold ${level === 'Primaria' ? 'text-montessori-red' : 'text-montessori-blue'}`;
+            // MEJORA UX: Actualizar Breadcrumbs
+            breadcrumbLevel.textContent = level;
+            breadcrumbGrade.textContent = grade;
+            
+            const gradeColor = level === 'Primaria' ? 'text-montessori-red' : 'text-montessori-blue';
+            breadcrumbLevel.className = `font-medium ${gradeColor}`;
+            breadcrumbGrade.className = `font-bold ${gradeColor}`;
 
+            // Limpiar lista y buscador
+            studentsContainer.innerHTML = '';
+            searchInput.value = '';
+
+            // Renderizar selector de grado rápido
+            renderGradeSelector(gradeKey);
+
+            currentGradeData = await fetchStudentData(grade, level, gradeKey, true);
+            
+            // Renderizar la lista inicial
+            renderStudentList(currentGradeData, level);
+
+            // Aplicar filtro si el usuario ya había tecleado algo
+            filterStudentList(); 
+        }
+
+        // --- MEJORA: Función de Filtro en Tiempo Real ---
+        function filterStudentList() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
             const listContainer = document.getElementById('students-list-container');
-            const loader = document.getElementById('loading-indicator');
+            listContainer.innerHTML = ''; // Limpiar antes de renderizar
             
-            while (listContainer.firstChild) {
-                listContainer.removeChild(listContainer.firstChild);
+            if (currentGradeData.length === 0) {
+                 listContainer.innerHTML = `<div class="text-center py-10 text-gray-600">No hay estudiantes en este grado o error al cargar.</div>`;
+                 return;
             }
+
+            const filteredData = currentGradeData.filter(student => 
+                student.nombre.toLowerCase().includes(searchTerm)
+            );
             
-            loader.classList.remove('hidden');
-            
-            const key = `${grade}-${level}`;
-            try {
-                let data;
-                if (gradePromises[key]) {
-                    data = await gradePromises[key];
-                } else {
-                    const response = await fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(grade)}&level=${encodeURIComponent(level)}&t=${new Date().getTime()}`, { redirect: 'follow' });
-                    data = await response.json();
+            if (filteredData.length > 0) {
+                renderStudentList(filteredData, currentGradeLevel, listContainer, true);
+            } else {
+                 listContainer.innerHTML = `<div class="text-center py-10 text-gray-600">No se encontraron resultados para "${searchTerm}".</div>`;
+            }
+        }
+
+
+        // --- MEJORA: Uso de Event Delegation y Lista Filtrada ---
+        function renderStudentList(data, level, container = studentsContainer, isFiltered = false) {
+            if (!data || data.length === 0) {
+                if (!isFiltered) {
+                    container.innerHTML = `<div class="text-center py-10 text-gray-600">Sin registros.</div>`;
                 }
-                loader.classList.add('hidden');
-                renderStudentList(data, listContainer, level);
-            } catch (error) {
-                loader.classList.add('hidden');
-                listContainer.innerHTML = `<div class="text-red-500 text-center">Error de conexión.</div>`;
+                return;
             }
+
+            const hoverClass = level === 'Primaria' ? 'hover:border-montessori-red' : 'hover:border-montessori-blue';
+            const btnClass = level === 'Primaria' 
+                ? 'text-montessori-red border-montessori-red hover:bg-montessori-red' 
+                : 'text-montessori-blue border-montessori-blue hover:bg-montessori-blue';
+
+            container.innerHTML = data.map((student, index) => {
+                const displayIndex = currentGradeData.findIndex(s => s.nombre === student.nombre) + 1;
+                return `
+                    <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-lg ${hoverClass} hover:shadow-sm transition-colors will-change-transform">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <span class="font-bold text-gray-600 w-6 text-right flex-shrink-0">${displayIndex}.</span>
+                            <span class="font-semibold text-gray-700 truncate">${student.nombre}</span>
+                        </div>
+                        <button type="button" 
+                                class="btn-bulletin-action text-sm font-bold ${btnClass} px-4 py-2 rounded-lg hover:text-white border transition-all cursor-pointer flex-shrink-0"
+                                data-link="${student.link}">
+                            Boletín
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
         // --- FUNCIONES DE MODAL (CERO LAG + MODO EDICIÓN) ---
@@ -1321,26 +1492,24 @@
         function openBulletinModal(url) {
             if (!url) return;
             
-            // 1. Pausa de animaciones de fondo
-            document.body.classList.add('animations-paused');
+            document.body.classList.add('high-performance-mode');
             
-            // 2. Usamos la URL original (Modo Edición)
             iframeLoader.classList.remove('hidden');
-            bulletinIframe.src = url; // <-- Se usa la URL original para la edición
+            bulletinIframe.src = url; 
             externalLinkBtn.href = url;
 
-            // 3. Mostrar Modal (INSTANTÁNEO)
             bulletinModal.classList.remove('hidden', 'opacity-0');
         }
 
         function closeBulletinModal() {
-            // 1. Ocultar visualmente PRIMERO
             bulletinModal.classList.add('opacity-0', 'hidden');
             
-            // 2. Reactivar animaciones
-            document.body.classList.remove('animations-paused');
+            if (document.getElementById('view-home').classList.contains('hidden')) {
+                // Si estoy en la vista de estudiantes, mantengo el modo de bajo rendimiento
+            } else {
+                document.body.classList.remove('high-performance-mode');
+            }
             
-            // 3. Destruir el iframe
             setTimeout(() => {
                 bulletinIframe.removeAttribute('src'); 
             }, 50);
@@ -1352,103 +1521,50 @@
             link.href = url;
             document.head.appendChild(link);
         }
-
-        function renderStudentList(data, container, level) {
-            if (!data || data.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-600">Sin registros</div>`;
-                return;
-            }
-
-            const hoverClass = level === 'Primaria' ? 'hover:border-montessori-red' : 'hover:border-montessori-blue';
-            const btnClass = level === 'Primaria' 
-                ? 'text-montessori-red border-montessori-red hover:bg-montessori-red' 
-                : 'text-montessori-blue border-montessori-blue hover:bg-montessori-blue';
-
-            container.innerHTML = data.map((student, index) => `
-                <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-lg ${hoverClass} hover:shadow-sm transition-colors">
-                    <div class="flex items-center gap-4">
-                        <span class="font-bold text-gray-600 w-6 text-right">${index + 1}.</span>
-                        <span class="font-semibold text-gray-700">${student.nombre}</span>
-                    </div>
-                    <button type="button" 
-                            class="btn-bulletin-action text-sm font-bold ${btnClass} px-4 py-2 rounded-lg hover:text-white border transition-all cursor-pointer"
-                            data-link="${student.link}">
-                        Boletín
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        const symbols = ['100', 'A+', 'A', '10', '✓', '95', 'B+', '★', '90', 'A', '100'];
-
-        function initAllParticles() {
-            const containers = document.querySelectorAll('.particles-container');
-            containers.forEach(container => createParticlesForContainer(container));
-        }
-
-        function createParticlesForContainer(container) {
-            const particleCount = 18; 
-            for (let i = 0; i < particleCount; i++) {
-                spawnParticle(container);
-            }
-        }
-
-        function spawnParticle(container) {
-            const span = document.createElement('span');
-            span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-            span.classList.add('grade-particle');
-            if (Math.random() > 0.5) span.classList.add('blue');
-            else span.classList.add('red');
-
-            const rotation = Math.floor(Math.random() * 40 - 20);
-            span.style.setProperty('--rotation', `${rotation}deg`);
-
-            span.classList.add('background');
-            const left = Math.random() * 100;
-            const duration = 15 + Math.random() * 20; 
-            const delay = Math.random() * -30; 
-            const size = 0.8 + Math.random() * 1.2; 
-
-            span.style.left = `${left}%`;
-            span.style.animationDuration = `${duration}s`;
-            span.style.animationDelay = `${delay}s`;
-            span.style.fontSize = `${size}rem`;
-
-            container.appendChild(span);
-        }
         
-        function checkSystemStatus(username = null) {
+        // --- ELIMINACIÓN DE SIMULACIÓN EN CONEXIÓN ---
+        async function checkSystemStatus(username = null) {
             const dot = document.getElementById('status-dot');
             const label = document.getElementById('status-label');
             const iconBg = document.getElementById('status-icon-bg');
             
             if (!dot || !label || !iconBg) return; 
             
+            let status = 'Offline';
             let url = `${API_URL}?action=checkStatus&t=${new Date().getTime()}`;
             if (username) url += `&username=${encodeURIComponent(username)}`;
 
             try {
-                // Simulación de fetch, asumiendo que ya funciona correctamente
-                /* const response = await fetch(url, { redirect: 'follow' });
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if(data.status === 'online') { */
-                        dot.classList.remove('bg-gray-400', 'bg-red-500'); dot.classList.add('bg-green-500');
-                        label.textContent = "En Línea"; label.classList.add('text-green-700');
-                        iconBg.classList.remove('bg-gray-100', 'text-gray-400', 'bg-purple-50', 'text-purple-600');
-                        iconBg.classList.add('bg-green-50', 'text-green-600');
-                    /* }
-                } */
+                 const response = await fetch(url, { redirect: 'follow', cache: 'no-store' }); // Forzar no-cache
+                 if (response.ok) {
+                     const data = await response.json();
+                     if(data.status === 'online') {
+                         status = 'En Línea';
+                     }
+                 }
             } catch (error) { 
-                dot.classList.add('bg-red-500'); 
-                label.textContent = "Offline";
-                iconBg.classList.add('bg-red-50', 'text-red-600');
+                console.warn("Error al verificar estado de la BD:", error);
             } 
+
+            // Actualización de UI
+            dot.classList.remove('bg-gray-400', 'bg-red-500', 'bg-green-500', 'animate-pulse');
+            iconBg.classList.remove('bg-gray-100', 'text-gray-400', 'bg-purple-50', 'text-purple-600', 'bg-red-50', 'text-red-600', 'bg-green-50', 'text-green-600');
+            label.classList.remove('text-green-700', 'text-red-700');
+
+            if (status === 'En Línea') {
+                dot.classList.add('bg-green-500', 'animate-pulse');
+                label.textContent = "En Línea"; 
+                label.classList.add('text-green-700');
+                iconBg.classList.add('bg-green-50', 'text-green-600');
+            } else {
+                dot.classList.add('bg-red-500', 'animate-pulse'); 
+                label.textContent = "Offline";
+                label.classList.add('text-red-700');
+                iconBg.classList.add('bg-red-50', 'text-red-600');
+            }
         }
 
         function skipIntro(name) {
-            prefetchGradesData(); 
             loginScreen.classList.add('hidden');
             appContent.classList.remove('hidden');
             appContent.classList.add('flex', 'fade-in');
@@ -1498,33 +1614,34 @@
             }, 60000); 
         }
 
-        // --- FUNCIONES DE CALENDARIO (AÑADIDAS) ---
-        function toggleCalendarModal() {
-            if (calendarModal.classList.contains('hidden')) {
+        // --- FUNCIONES DE CALENDARIO (REVISADAS) ---
+
+        function toggleCalendarModal(forceClose = false) {
+            if (forceClose || !calendarModal.classList.contains('hidden')) {
+                calendarModal.classList.add('opacity-0');
+                calendarModalContent.classList.remove('scale-100');
+                calendarModalContent.classList.add('scale-95');
+                document.body.classList.remove('high-performance-mode');
+                setTimeout(() => {
+                    calendarModal.classList.add('hidden');
+                }, 200);
+            } else {
                 renderCalendar();
                 calendarModal.classList.remove('hidden');
-                document.body.classList.add('animations-paused');
+                document.body.classList.add('high-performance-mode'); // Pausar fondo al abrir
                 requestAnimationFrame(() => {
                     calendarModal.classList.remove('opacity-0');
                     calendarModalContent.classList.remove('scale-95');
                     calendarModalContent.classList.add('scale-100');
                 });
-            } else {
-                calendarModal.classList.add('opacity-0');
-                calendarModalContent.classList.remove('scale-100');
-                calendarModalContent.classList.add('scale-95');
-                document.body.classList.remove('animations-paused');
-                setTimeout(() => {
-                    calendarModal.classList.add('hidden');
-                }, 200);
             }
         }
 
-        function renderCalendar() {
+        function renderCalendar() { 
             calendarGrid.innerHTML = '';
             const monthName = monthNames[currentCalMonth];
-            calMonthDisplay.textContent = monthName; // Usando calMonthDisplay
-            calYearDisplay.textContent = currentCalYear; // Usando calYearDisplay
+            calMonthDisplay.textContent = monthName; 
+            calYearDisplay.textContent = currentCalYear; 
 
             // LÓGICA DE TAMAÑO DE FUENTE INTELIGENTE
             if(monthName.length > 8) { // Meses largos (Septiembre, Noviembre, Diciembre)
@@ -1544,10 +1661,10 @@
                 const dayEl = document.createElement('div');
                 
                 if (i < firstDay || dayCount > daysInMonth) {
-                    dayEl.className = 'calendar-day empty'; // Usar la clase del calendario
+                    dayEl.className = 'calendar-day empty'; 
                     dayEl.innerHTML = '';
                 } else {
-                    dayEl.className = 'calendar-day group'; // Usar la clase del calendario
+                    dayEl.className = 'calendar-day group'; 
                     const date = new Date(currentCalYear, currentCalMonth, dayCount);
                     const dateString = `${currentCalMonth + 1}/${dayCount}/${currentCalYear}`;
                     
@@ -1586,7 +1703,7 @@
                 calendarGrid.appendChild(dayEl);
             }
         }
-
+        
         function openEventDetailModal(date, text, isHoliday, isEdu, isHoly) {
             const dateString = `${dayNames[date.getDay()]}, ${date.getDate()} de ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
             eventDetailDate.textContent = dateString;
@@ -1613,7 +1730,7 @@
                 document.getElementById('event-detail-content').classList.add('scale-100');
             });
         }
-
+        
         function closeEventDetailModal() {
             eventDetailModal.classList.add('opacity-0');
             document.getElementById('event-detail-content').classList.remove('scale-100');
@@ -1622,58 +1739,72 @@
                 eventDetailModal.classList.add('hidden');
             }, 200);
         }
+        
+        // --- INICIALIZACIÓN ---
 
-        // Calendar Listeners
-        if (calPrevBtn) {
-            calPrevBtn.addEventListener('click', () => {
-                currentCalMonth--;
-                if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
-                renderCalendar();
-            });
+        const symbols = ['100', 'A+', 'A', '10', '✓', '95', 'B+', '★', '90', 'A', '100'];
+        function initAllParticles() {
+            const containers = document.querySelectorAll('.particles-container');
+            containers.forEach(container => createParticlesForContainer(container));
         }
-        if (calNextBtn) {
-            calNextBtn.addEventListener('click', () => {
-                currentCalMonth++;
-                if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
-                renderCalendar();
-            });
+
+        function createParticlesForContainer(container) {
+            const particleCount = 18; 
+            for (let i = 0; i < particleCount; i++) {
+                spawnParticle(container);
+            }
         }
-        if (calendarModal) {
-            calendarModal.addEventListener('click', (e) => {
-                if(e.target === calendarModal) toggleCalendarModal();
-            });
+
+        function spawnParticle(container) {
+            const span = document.createElement('span');
+            span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            span.classList.add('grade-particle');
+            if (Math.random() > 0.5) span.classList.add('blue');
+            else span.classList.add('red');
+
+            const rotation = Math.floor(Math.random() * 40 - 20);
+            span.style.setProperty('--rotation', `${rotation}deg`);
+
+            span.classList.add('background');
+            const left = Math.random() * 100;
+            const duration = 15 + Math.random() * 20; 
+            const delay = Math.random() * -30; 
+            const size = 0.8 + Math.random() * 1.2; 
+
+            span.style.left = `${left}%`;
+            span.style.animationDuration = `${duration}s`;
+            span.style.animationDelay = `${delay}s`;
+            span.style.fontSize = `${size}rem`;
+
+            container.appendChild(span);
         }
+
+        // Calendar Listeners 
+        if (calPrevBtn) calPrevBtn.addEventListener('click', () => { currentCalMonth--; if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; } renderCalendar(); });
+        if (calNextBtn) calNextBtn.addEventListener('click', () => { currentCalMonth++; if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; } renderCalendar(); });
+        if (calendarModal) calendarModal.addEventListener('click', (e) => { if(e.target === calendarModal) toggleCalendarModal(); });
 
         window.onload = () => {
             document.body.onmousemove = resetInactivityTimer;
             document.body.onkeydown = resetInactivityTimer;
             document.body.onclick = resetInactivityTimer;
             window.addEventListener('resize', matchWidths);
+            
+            // --- MEJORA: Listener para búsqueda en tiempo real ---
+            if (searchInput) {
+                 searchInput.addEventListener('input', filterStudentList);
+            }
 
             matchWidths();
-            setTimeout(() => {
-                // Placeholder logic for checkSessionValidity
-                const sessionData = sessionStorage.getItem('pinceladas_session');
-                if (sessionData) {
-                    const session = JSON.parse(sessionData);
-                    skipIntro(session.name);
-                    resetInactivityTimer();
-                } else {
-                    const initialLoader = document.getElementById('initial-loader');
-                    if(initialLoader) {
-                        initialLoader.classList.add('opacity-0', 'pointer-events-none');
-                        setTimeout(() => { initialLoader.classList.add('hidden'); }, 700);
-                    }
-                }
-            }, 800);
             
-            checkSystemStatus(); 
+            checkSessionValidity(); // Usa la nueva lógica de sesión
             initDynamicTexts();
             initAllParticles(); 
             
             bulletinIframe.onload = () => { iframeLoader.classList.add('hidden'); };
             closeBulletinBtn.addEventListener('click', closeBulletinModal);
             
+            // --- MEJORA: Delegación de Eventos en la Lista de Estudiantes ---
             if(studentsContainer) {
                 studentsContainer.addEventListener('click', function(e) {
                     const btn = e.target.closest('.btn-bulletin-action');
@@ -1691,6 +1822,14 @@
                     }
                 });
             }
+            
+            // Global listener to close the custom dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                const switcherContainer = document.getElementById('grade-quick-switcher');
+                if (switcherContainer && !switcherContainer.contains(e.target) && isSwitcherOpen) {
+                    toggleSwitcher(true);
+                }
+            });
         };
     </script>
 </body>
