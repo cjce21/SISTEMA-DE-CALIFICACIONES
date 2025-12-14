@@ -117,6 +117,25 @@
             text-align: left;
         }
 
+        /* --- SKELETON LOADER (NUEVO) --- */
+        .animate-shimmer {
+            background: linear-gradient(to right, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton-row {
+            height: 56px; /* Altura estándar de una fila de estudiante */
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+        }
+        
         /* --- CLASES DE UTILIDAD --- */
         main {
             flex: 1;
@@ -705,7 +724,7 @@
                     <button onclick="logout()" class="bg-red-50 hover:bg-red-100 text-red-500 font-bold text-xs px-3 py-1.5 rounded transition-all duration-200 flex items-center gap-2 group border border-transparent hover:border-red-200 uppercase tracking-wide">
                         <span>Cerrar Sesión</span>
                         <svg class="w-3 h-3 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
                     </button>
                 </div>
@@ -788,6 +807,7 @@
                                         <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
                                         <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                     </div>
+                                    <!-- CONTENEDOR DE CARGA ELIMINADO PARA EVITAR SHIFT -->
                                     <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
                                         <span class="text-xs font-medium loading-text">Actualizando</span>
                                     </div>
@@ -812,7 +832,10 @@
     <script>
         // CORRECCIÓN: Se utiliza la URL de API de la versión que funciona (index (1).html)
         const API_URL = "https://script.google.com/macros/s/AKfycbzcj7pjOOF39HJJW7N3ShylQrwHK8tloToznQKNgfHCFVedmKnK8kmwuq8omoXNNTL-/exec"; 
-        const CACHE_KEY = 'pinceladas_cache_students'; // Clave para el almacenamiento en sesión
+        
+        // --- CAMBIO CLAVE: Caching persistente con localStorage y versión ---
+        const CACHE_KEY = 'pinceladas_cache_students'; 
+        const CACHE_VERSION = 'v1.1'; // Incremento de versión para forzar la actualización de cache si la estructura cambia
         
         // --- ELEMENTOS GENERALES ---
         const loginScreen = document.getElementById('login-screen');
@@ -835,7 +858,7 @@
         // --- VISTA DE ESTUDIANTES ---
         const studentsContainer = document.getElementById('students-list-container');
         const searchInput = document.getElementById('student-search-input');
-        const loadingIndicator = document.getElementById('loading-indicator');
+        // const loadingIndicator = document.getElementById('loading-indicator'); // ELIMINADO para evitar reflow
 
         // --- BREADCRUMBS ---
         const breadcrumbLevel = document.getElementById('breadcrumb-level');
@@ -899,7 +922,7 @@
         
         let allAccessibleGrades = []; // Lista de todos los grados a los que el usuario tiene acceso
         let isSwitcherOpen = false; // Estado del nuevo selector desplegable
-        const gradePromises = {}; // Caché de promesas de datos de estudiantes
+        const gradePromises = {}; // Caché de promesas de datos de estudiantes (ya no es vital, pero se mantiene para prefetch)
 
         let currentCalMonth = new Date().getMonth();
         let currentCalYear = new Date().getFullYear();
@@ -1080,7 +1103,67 @@
             '4/3/2026', '4/4/2026'
         ]);
 
-        // --- FUNCIONES ---
+        // --- FUNCIONES DE CACHÉ PERSISTENTE (localStorage) ---
+
+        function getCachedData() {
+            try {
+                const cache = localStorage.getItem(CACHE_KEY); // Usa localStorage
+                const data = cache ? JSON.parse(cache) : { version: CACHE_VERSION };
+                
+                // Borrar caché si la versión es incorrecta (estructura de datos antigua)
+                if (data.version !== CACHE_VERSION) {
+                    console.warn(`[Cache] Versión de caché antigua (${data.version}). Limpiando y regenerando.`);
+                    localStorage.removeItem(CACHE_KEY);
+                    return { version: CACHE_VERSION };
+                }
+                return data;
+            } catch (e) {
+                console.error("Error retrieving cache:", e);
+                localStorage.removeItem(CACHE_KEY); // Limpiar caché corrupto
+                return { version: CACHE_VERSION };
+            }
+        }
+
+        function setCachedData(gradeKey, data) {
+            try {
+                const cache = getCachedData();
+                // Guardamos los estudiantes y un timestamp (opcional, pero útil)
+                cache[gradeKey] = { students: data, timestamp: new Date().getTime() }; 
+                cache.version = CACHE_VERSION;
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); // Usa localStorage
+            } catch (e) {
+                console.error("Error setting cache:", e);
+            }
+        }
+
+        function loadFromCache(gradeKey) {
+            const cache = getCachedData();
+            // Retorna el array de estudiantes o un array vacío
+            return cache[gradeKey] ? cache[gradeKey].students : [];
+        }
+
+        async function fetchFromNetwork(grade, level, gradeKey) {
+            console.log(`[Cache Sync] Buscando datos nuevos para ${gradeKey}...`);
+            try {
+                const response = await fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(grade)}&level=${encodeURIComponent(level)}&t=${new Date().getTime()}`, { redirect: 'follow' });
+                if (!response.ok) throw new Error("Network request failed");
+                
+                const data = await response.json();
+                
+                if (data && Array.isArray(data)) {
+                    // Guardar en caché la nueva data
+                    setCachedData(gradeKey, data);
+                    return data;
+                }
+                return [];
+            } catch (error) {
+                console.warn(`[Cache Sync] Error al obtener datos de red para ${gradeKey}:`, error);
+                return [];
+            }
+        }
+
+        // --- FIN FUNCIONES DE CACHÉ ---
+
 
         function initDynamicTexts(name) {
             if (name) userNameDisplay.textContent = name;
@@ -1159,6 +1242,7 @@
             }
 
             sessionStorage.removeItem('pinceladas_session');
+            localStorage.removeItem(CACHE_KEY); // Limpiar caché persistente al cerrar sesión
             timeoutScreen.classList.remove('hidden');
             requestAnimationFrame(() => {
                  document.getElementById('timeout-content').classList.remove('scale-95');
@@ -1282,7 +1366,7 @@
                     }));
                     
                     setTimeout(() => checkSystemStatus(data.name), 100); 
-                    setTimeout(() => prefetchGradesData(), 300);
+                    setTimeout(() => prefetchGradesData(), 300); // Lanzamos la precarga de todos los grupos
                     setTimeout(() => loadAnnouncements(), 800); 
 
                     setTimeout(() => {
@@ -1309,40 +1393,20 @@
             }
         }
 
-        // --- Funciones de Caching ---
-
-        function getCachedData() {
-            try {
-                const cache = sessionStorage.getItem(CACHE_KEY);
-                return cache ? JSON.parse(cache) : {};
-            } catch (e) {
-                console.error("Error retrieving cache:", e);
-                return {};
-            }
-        }
-
-        function setCachedData(gradeKey, data) {
-            try {
-                const cache = getCachedData();
-                cache[gradeKey] = data;
-                sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-            } catch (e) {
-                console.error("Error setting cache:", e);
-            }
-        }
-        
-        // --- MEJORA: Prefetch de Datos a Cache ---
+        // --- MEJORA: Prefetch de Datos a Cache (Llenado de localStorage) ---
         function prefetchGradesData() {
             // Es importante que allAccessibleGrades esté actualizado antes de esta llamada
-            // Esto se asegura en checkSessionValidity y handleLogin
             allAccessibleGrades.forEach(g => {
                 const key = `${g.nombre}-${g.nivel}`;
-                // Solo si no está ya en caché, inicia el fetch
-                if (!getCachedData()[key]) {
-                    gradePromises[key] = fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(g.nombre)}&level=${encodeURIComponent(g.nivel)}&t=${new Date().getTime()}`, { redirect: 'follow' })
-                        .then(response => response.json())
-                        .catch(error => { console.error(`Error prefetching ${key}:`, error); return []; });
+                const cached = loadFromCache(key);
+
+                // Solo si no hay datos en caché, iniciamos un fetch silencioso para poblarlo
+                if (cached.length === 0) {
+                     console.log(`[Prefetch] Iniciando carga silenciosa de ${key} (Caché vacío)`);
+                     // Lanzamos el fetch. El resultado se guardará directamente en localStorage dentro de fetchFromNetwork.
+                     fetchFromNetwork(g.nombre, g.nivel, key); 
                 }
+                // Si ya hay caché, no hacemos nada. La actualización se hará al entrar al grupo.
             });
         }
         
@@ -1388,7 +1452,7 @@
 
         function logout() {
             sessionStorage.removeItem('pinceladas_session');
-            sessionStorage.removeItem(CACHE_KEY); 
+            localStorage.removeItem(CACHE_KEY); // Limpiamos la caché persistente al cerrar sesión
             location.reload();
         }
 
@@ -1475,39 +1539,9 @@
             toggleSwitcher(true); 
         }
 
-        // --- FETCH DE DATOS DE ESTUDIANTES ---
-        async function fetchStudentData(grade, level, key, showLoader = true) {
-            if (showLoader) loadingIndicator.classList.remove('hidden');
-            
-            try {
-                // 1. Intentar cargar desde la caché/promesa (si se pre-cargó)
-                const cached = getCachedData()[key] || gradePromises[key];
-
-                if (cached) {
-                    const data = await (cached.then ? cached : Promise.resolve(cached));
-                    if (Array.isArray(data) && data.length > 0) {
-                        setCachedData(key, data); // Asegurar que el caché esté guardado
-                        return data;
-                    }
-                }
-                
-                // 2. Si no hay caché o falló, hacer fetch
-                const response = await fetch(`${API_URL}?action=getStudents&grade=${encodeURIComponent(grade)}&level=${encodeURIComponent(level)}&t=${new Date().getTime()}`, { redirect: 'follow' });
-                const data = await response.json();
-                
-                if (data && data.length > 0) {
-                    setCachedData(key, data); // Guardar en caché
-                    return data;
-                }
-                return [];
-
-            } catch (error) {
-                console.error("Error fetching students:", error);
-                return [];
-            } finally {
-                if (showLoader) loadingIndicator.classList.add('hidden');
-            }
-        }
+        // --- FETCH DE DATOS DE ESTUDIANTES (LÓGICA STALE-WHILE-REVALIDATE) ---
+        
+        // *** Función eliminada: fetchStudentData. Su lógica se divide en loadFromCache y fetchFromNetwork. ***
 
         // --- NUEVAS FUNCIONES PARA EL SELECTOR CUSTOM (Dropdown) ---
 
@@ -1605,14 +1639,47 @@
             // Limpiar lista y buscador
             studentsContainer.innerHTML = '';
             searchInput.value = '';
-
-            currentGradeData = await fetchStudentData(grade, level, gradeKey, true);
             
-            // Renderizar la lista inicial
-            renderStudentList(currentGradeData, level);
+            // --- FASE 1: CARGA INMEDIATA DESDE CACHÉ (INSTANTÁNEA) ---
+            currentGradeData = loadFromCache(gradeKey);
+            
+            if (currentGradeData.length === 0) {
+                console.log(`[Load] Caché vacío. Mostrando esqueleto y pidiendo datos de red.`);
+                renderSkeletonRows(currentGradeLevel); // Mostrar esqueleto
+                // loadingIndicator.classList.remove('hidden'); // ELIMINADO: No mostrar indicador visible
+            } else {
+                console.log(`[Load] ${currentGradeData.length} estudiantes cargados instantáneamente desde caché.`);
+                renderStudentList(currentGradeData, currentGradeLevel); // Renderizar lista vieja (Stale)
+                // loadingIndicator.classList.remove('hidden'); // ELIMINADO: No mostrar indicador visible
+            }
 
-            // Aplicar filtro si el usuario ya había tecleado algo
-            filterStudentList(); 
+            // --- FASE 2: VERIFICACIÓN SILENCIOSA EN SEGUNDO PLANO (REVALIDATE) ---
+            const newData = await fetchFromNetwork(grade, level, gradeKey);
+            
+            // loadingIndicator.classList.add('hidden'); // ELIMINADO: No mostrar indicador visible
+
+            // --- FASE 3: COMPARACIÓN Y ACTUALIZACIÓN ---
+            if (newData.length > 0) {
+                // Si la data de red es diferente a la que teníamos (o si el cache estaba vacío)
+                // Nota: La comparación se omite por simplicidad y se asume que si hay datos nuevos, hay que renderizar.
+                
+                // Si la lista de caché estaba vacía, ahora tenemos datos.
+                // Si ya había datos, la actualización es silenciosa, a menos que el filtro esté activo.
+                if (currentGradeData.length === 0 || searchInput.value.trim() !== '') {
+                    currentGradeData = newData;
+                    filterStudentList(); // Aplicar filtro/renderizar con los datos nuevos
+                } else if (JSON.stringify(currentGradeData) !== JSON.stringify(newData)) {
+                     // Si los datos son diferentes y no hay filtro, refrescar la lista.
+                     currentGradeData = newData;
+                     renderStudentList(currentGradeData, currentGradeLevel);
+                     console.log("[Load] Lista actualizada silenciosamente con datos de red.");
+                } else {
+                     console.log("[Load] Datos de caché y red son iguales. No se requiere refresco.");
+                }
+            } else if (currentGradeData.length === 0) {
+                 // Si ni caché ni red devolvieron datos, mostrar mensaje de error.
+                 studentsContainer.innerHTML = `<div class="text-center py-10 text-gray-600">No hay estudiantes en este grado o error de conexión.</div>`;
+            }
         }
 
         // --- MEJORA: Función de Filtro en Tiempo Real ---
@@ -1637,6 +1704,26 @@
             }
         }
 
+
+        // --- MEJORA: Función para renderizar filas de esqueleto (Skeleton Loader) ---
+        function renderSkeletonRows(level) {
+            const listContainer = document.getElementById('students-list-container');
+            const colorClass = level === 'Primaria' ? 'bg-red-100/50' : 'bg-blue-100/50';
+            let skeletonHTML = '';
+            
+            // Generar 10 filas de esqueleto
+            for(let i = 0; i < 10; i++) {
+                skeletonHTML += `
+                    <div class="skeleton-row space-y-2 bg-white border border-gray-100 shadow-sm cursor-wait group animate-pulse">
+                        <div class="flex items-center gap-4 min-w-0 w-full">
+                            <div class="font-bold w-6 h-4 bg-gray-200 rounded flex-shrink-0"></div>
+                            <div class="h-4 ${colorClass} rounded-full animate-shimmer" style="width: ${80 - (i * 3)}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            listContainer.innerHTML = skeletonHTML;
+        }
 
         // --- MEJORA: Uso de Fila Completa como Botón (Solicitado) ---
         function renderStudentList(data, level, container = studentsContainer, isFiltered = false) {
@@ -1847,6 +1934,7 @@
                 
                 if ((new Date().getTime() - session.loginTime) > sessionTimeout) {
                     sessionStorage.removeItem('pinceladas_session');
+                    localStorage.removeItem(CACHE_KEY); // Limpiamos la caché persistente
                     removeInitialLoader();
                 } else {
                     currentUserTimeoutMs = sessionTimeout;
@@ -1856,6 +1944,7 @@
                     allAccessibleGrades = getAccessibleGrades(perms); // Pasamos el string de permisos
 
                     skipIntro(session.name);
+                    prefetchGradesData(); // Lanzamos la precarga al saltar el login
                     resetInactivityTimer();
                 }
             } else {
