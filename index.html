@@ -142,7 +142,9 @@
             overflow-y: auto; 
             display: flex;
             flex-direction: column;
-            padding: 1.5rem; 
+            /* Eliminado padding-y de aquí para controlarlo en las vistas */
+            padding-left: 1.5rem; 
+            padding-right: 1.5rem; 
             width: 100%;
         }
 
@@ -519,7 +521,7 @@
                 </div>
                 <div class="mt-2">
                     <!-- CORRECCIÓN: El botón llama a closeAccessDenied() que cierra el modal -->
-                    <button type="button" onclick="closeAccessDenied()" class="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-md px-4 py-3 bg-gray-800 text-base font-bold text-white hover:bg-gray-700 focus:outline-none transition-all transform hover:-translate-y-0.5">Aceptar y Continuar</button>
+                    <button type="button" onclick="closeAccessDenied()" class="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-md px-4 py-3 bg-gray-800 text-base font-bold text-white hover:bg-gray-700 focus:outline-none transition-all transform hover:-translate-y-0.5 active:translate-y-0">Aceptar y Continuar</button>
                 </div>
             </div>
         </div>
@@ -732,11 +734,11 @@
         </header>
 
         <!-- MAIN -->
-        <main class="flex-1 w-full px-6 py-6 no-scrollbar overflow-y-auto hide-scrollbar bg-transparent relative z-10">
+        <!-- MODIFICADO: Eliminado py-6 para controlar el padding vertical dentro de las vistas -->
+        <main class="flex-1 w-full px-6 py-0 no-scrollbar overflow-y-auto hide-scrollbar bg-transparent relative z-10">
             <div class="w-full">
-                <!-- Eliminado: dashboard-metrics para subir el contenido de los grupos -->
-
-                <div id="view-home" class="max-w-[1440px] mx-auto fade-in h-full flex flex-col pb-8 w-full will-change-opacity">
+                <!-- MODIFICADO: Añadido py-6 para mantener el padding superior en la vista de inicio -->
+                <div id="view-home" class="max-w-[1440px] mx-auto fade-in h-full flex flex-col py-6 pb-8 w-full will-change-opacity">
                     <div class="flex items-center gap-3 mb-4 pb-1">
                         <div class="h-6 w-1.5 bg-montessori-red rounded-full"></div>
                         <h2 class="text-lg font-bold text-montessori-red">Nivel Primaria</h2>
@@ -768,53 +770,62 @@
 
                 <div id="view-students" class="hidden fade-in w-full will-change-opacity">
                     <div class="w-full"> 
-                        <!-- MEJORA UX: Breadcrumbs y Selector Rápido de Grado -->
-                        <div class="flex items-center gap-2 mb-6 text-sm text-gray-600">
-                            <button onclick="showHome()" class="hover:text-montessori-blue hover:underline flex items-center gap-1 font-medium transition-colors breadcrumb-link">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                                Inicio
-                            </button>
-                            <span>/</span>
-                            <span id="breadcrumb-level" class="font-medium">...</span>
-                            <span>/</span>
-                            <span id="breadcrumb-grade" class="font-bold text-montessori-blue">...</span>
-                        </div>
                         
-                        <div class="w-full">
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                                <!-- CONTENEDOR FLEX PARA BOTÓN DESPLEGABLE Y BUSCADOR -->
-                                <h3 class="font-bold text-gray-700 text-lg flex-shrink-0 hidden sm:block">Listado Oficial</h3>
-                                <div class="flex flex-col sm:flex-row items-center sm:items-center justify-end gap-3 w-full sm:w-auto">
-                                    
-                                    <!-- CONTENEDOR DEL DROPDOWN (AHORA COMPACTO) -->
-                                    <div id="grade-quick-switcher" class="relative w-full sm:w-auto">
-                                        <!-- Botón de activación del Dropdown -->
-                                        <button onclick="toggleSwitcher()" 
-                                                id="switcher-button" 
-                                                class="w-full sm:w-64 bg-white border border-gray-200 text-gray-800 font-semibold py-2.5 px-4 rounded-lg flex justify-between items-center transition-colors hover:bg-gray-50 active:bg-gray-100 shadow-sm">
-                                            <span id="current-grade-label" class="truncate">Seleccionar Grado</span>
-                                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-150 flex-shrink-0 ml-2" id="switcher-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </button>
+                        <!-- INICIO: CONTENEDOR FIJO DE LA CABECERA (Breadcrumbs, Título y Controles) -->
+                        <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-sm border-b border-gray-100 pt-6 pb-4">
+                            <!-- MEJORA UX: Breadcrumbs y Selector Rápido de Grado -->
+                            <!-- MODIFICADO: mb-6 cambiado a mb-4 -->
+                            <div class="flex items-center gap-2 mb-4 text-sm text-gray-600">
+                                <button onclick="showHome()" class="hover:text-montessori-blue hover:underline flex items-center gap-1 font-medium transition-colors breadcrumb-link">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                    Inicio
+                                </button>
+                                <span>/</span>
+                                <span id="breadcrumb-level" class="font-medium">...</span>
+                                <span>/</span>
+                                <span id="breadcrumb-grade" class="font-bold text-montessori-blue">...</span>
+                            </div>
+                            
+                            <div class="w-full">
+                                <!-- MODIFICADO: Eliminado mb-4 del contenedor de controles -->
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                    <!-- CONTENEDOR FLEX PARA BOTÓN DESPLEGABLE Y BUSCADOR -->
+                                    <h3 class="font-bold text-gray-700 text-lg flex-shrink-0 hidden sm:block">Listado Oficial</h3>
+                                    <div class="flex flex-col sm:flex-row items-center sm:items-center justify-end gap-3 w-full sm:w-auto">
                                         
-                                        <!-- Menú Desplegable (insertado por JS) -->
-                                        <div id="switcher-dropdown" class="hidden opacity-0 transform transition-all duration-200 ease-out flex flex-col hide-scrollbar">
-                                            <!-- Contenido insertado por renderGradeSelector() -->
+                                        <!-- CONTENEDOR DEL DROPDOWN (AHORA COMPACTO) -->
+                                        <div id="grade-quick-switcher" class="relative w-full sm:w-auto">
+                                            <!-- Botón de activación del Dropdown -->
+                                            <button onclick="toggleSwitcher()" 
+                                                    id="switcher-button" 
+                                                    class="w-full sm:w-64 bg-white border border-gray-200 text-gray-800 font-semibold py-2.5 px-4 rounded-lg flex justify-between items-center transition-colors hover:bg-gray-50 active:bg-gray-100 shadow-sm">
+                                                <span id="current-grade-label" class="truncate">Seleccionar Grado</span>
+                                                <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-150 flex-shrink-0 ml-2" id="switcher-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            
+                                            <!-- Menú Desplegable (insertado por JS) -->
+                                            <div id="switcher-dropdown" class="hidden opacity-0 transform transition-all duration-200 ease-out flex flex-col hide-scrollbar">
+                                                <!-- Contenido insertado por renderGradeSelector() -->
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <!-- BUSCADOR (AHORA MEJOR UBICADO) -->
-                                    <div class="relative w-full sm:w-64">
-                                        <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
-                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                    </div>
-                                    <!-- CONTENEDOR DE CARGA ELIMINADO PARA EVITAR SHIFT -->
-                                    <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
-                                        <span class="text-xs font-medium loading-text">Actualizando</span>
+                                        
+                                        <!-- BUSCADOR (AHORA MEJOR UBICADO) -->
+                                        <div class="relative w-full sm:w-64">
+                                            <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
+                                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                        </div>
+                                        <!-- CONTENEDOR DE CARGA ELIMINADO PARA EVITAR SHIFT -->
+                                        <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
+                                            <span class="text-xs font-medium loading-text">Actualizando</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div id="students-list-container" class="space-y-2"></div>
                         </div>
+                        <!-- FIN: CONTENEDOR FIJO DE LA CABECERA -->
+                        
+                        <!-- Lista de Estudiantes (Contenido Scrollable) -->
+                        <div id="students-list-container" class="space-y-2 pt-4 pb-8"></div>
                     </div>
                 </div>
             </div>
