@@ -506,6 +506,24 @@
             <button onclick="location.reload()" class="w-full bg-montessori-blue text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-800 hover:shadow-montessori-blue/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0">Restablecer Sesión</button>
         </div>
     </div>
+    
+    <!-- NUEVA PANTALLA: CIERRE DE PROCESAMIENTO -->
+    <div id="closure-screen" class="fixed inset-0 z-[200] flex items-center justify-center bg-montessori-red/95 overflow-hidden opacity-0 transition-opacity duration-500 ease-out hidden">
+        <div class="particles-container z-10"></div>
+        <!-- MODIFICADO: max-w-xl -> max-w-3xl. -->
+        <div class="relative z-20 bg-white p-8 rounded-3xl shadow-2xl border border-red-500 max-w-3xl w-full text-center transform transition-transform duration-500 scale-95" id="closure-content">
+            <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-300/50">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <!-- MODIFICADO: Añadido whitespace-nowrap y text-center. -->
+            <h3 class="text-3xl font-black text-montessori-red font-montserrat mb-3 text-center whitespace-nowrap" id="closure-title">CIERRE DE PROCESAMIENTO DE DATOS</h3>
+            <!-- MODIFICADO: text-justify -->
+            <p class="text-gray-700 text-base mb-8 leading-relaxed text-justify" id="closure-message">El sistema ha sido cerrado por la Administración debido a la fase de corte y cierre de evaluaciones. El acceso se restablecerá automáticamente al inicio del próximo periodo académico.</p>
+            <!-- MODIFICADO: Botón con nuevo texto -->
+            <button onclick="logout()" class="w-full bg-montessori-blue text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-800 hover:shadow-montessori-blue/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0">Cerrar Sesión</button>
+            <p class="text-xs text-gray-500 mt-4 text-center">El programa volverá a estar disponible para la gestión del Período 3.</p>
+        </div>
+    </div>
 
     <!-- ACCESO DENEGADO -->
     <!-- CORRECCIÓN: Añadido onclick para cerrar el modal por clic exterior -->
@@ -866,6 +884,11 @@
         const accessDeniedMessage = document.getElementById('access-denied-message'); 
         const initialLoader = document.getElementById('initial-loader');
         
+        // --- NUEVOS ELEMENTOS DE CIERRE ---
+        const closureScreen = document.getElementById('closure-screen');
+        const closureTitle = document.getElementById('closure-title');
+        const closureMessageEl = document.getElementById('closure-message');
+        
         // --- VISTA DE ESTUDIANTES ---
         const studentsContainer = document.getElementById('students-list-container');
         const searchInput = document.getElementById('student-search-input');
@@ -997,7 +1020,7 @@
             '11/17/2025': 'Celebración día de los abuelos y abuelas (17-20 Noviembre, Nivel Inicial)',
             '11/18/2025': 'Día Nacional de la Familia',
             '11/20/2025': 'Día Universal del Niño',
-            '11/21/2025': 'Entrega Primer reporte de calificaciones (Primaria y Secundaria)',
+            '11/21/2025': 'Entrega Primer reporte de calificaciones (Primaria segundo ciclo y Secundaria primer ciclo)',
             '11/24/2025': 'Semana de evaluación mensual Noviembre del 24 al 27',
             '11/25/2025': 'Día Internacional de la Eliminación de la Violencia contra la Mujer. Paseo Museo Hnas. Mirabal',
             '11/26/2025': 'Día Nacional del Merengue',
@@ -1010,7 +1033,7 @@
             '12/12/2025': 'Último día de docencia PSC hasta SPC. Celebraciones navideñas',
             '12/15/2025': 'Último día de docencia PPC e Inicial. Celebraciones navideñas',
             '12/16/2025': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
-            '12/17/2025': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
+            '12/17/2026': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
             '12/18/2025': 'Fiesta de Empleados',
             '12/19/2025': 'Fiesta de Empleados',
             '12/25/2025': 'Día de la Navidad (No Laborable)',
@@ -1105,7 +1128,7 @@
 
         const educationalHolidays = new Set([
             '1/6/2026', '6/30/2025', '6/30/2026', '4/23/2025', '4/23/2026',
-            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/2025', '11/10/2026',
+            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/2025', '11/10/206',
             '10/10/2025', '10/10/2026', '10/16/2025', '10/16/2026', '10/21/2025',
             '10/21/2026', '12/3/2025', '12/3/2026', '12/10/2025', '12/10/2026',
             '11/20/2025', '11/20/2026', '4/15/2026', '4/22/2026'
@@ -1211,8 +1234,8 @@
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
-            // Solo reinicia si el usuario está logueado y no en la pantalla de timeout
-            if (loginScreen.classList.contains('hidden') && timeoutScreen.classList.contains('hidden')) { 
+            // Solo reinicia si el usuario está logueado y no en la pantalla de timeout O cierre
+            if (loginScreen.classList.contains('hidden') && timeoutScreen.classList.contains('hidden') && closureScreen.classList.contains('hidden')) { 
                 inactivityTimer = setTimeout(() => handleSessionTimeout(), currentUserTimeoutMs);
             }
         }
@@ -1237,27 +1260,11 @@
             if (statusInterval) clearInterval(statusInterval);
             if (iframeActivityChecker) clearInterval(iframeActivityChecker); // NUEVO: Limpiar el verificador de Iframe
 
+            // Cierra modales
+            closeAllModals();
+
             // IMPORTANTE: Reactivar las animaciones de fondo (quitar modo alto rendimiento)
             document.body.classList.remove('high-performance-mode');
-
-            // Cerrar cualquier modal abierto inmediatamente
-            if (!bulletinModal.classList.contains('hidden')) {
-                closeBulletinModal();
-            }
-            
-            if (!calendarModal.classList.contains('hidden')) {
-                // Lógica manual de cierre para evitar toggle
-                calendarModal.classList.add('opacity-0');
-                calendarModalContent.classList.remove('scale-100');
-                calendarModalContent.classList.add('scale-95');
-                setTimeout(() => {
-                    calendarModal.classList.add('hidden');
-                }, 200);
-            }
-            
-            if (!eventDetailModal.classList.contains('hidden')) {
-                closeEventDetailModal();
-            }
 
             sessionStorage.removeItem('pinceladas_session');
             localStorage.removeItem(CACHE_KEY); // Limpiar caché persistente al cerrar sesión
@@ -1268,6 +1275,64 @@
                  timeoutScreen.classList.remove('opacity-0');
             });
             document.getElementById('app-content').classList.add('blur-sm');
+        }
+        
+        // NUEVA FUNCIÓN: Manejo del CIERRE DE PROCESAMIENTO
+        function handleClosure(message) {
+            // Limpieza de intervalos y timeouts
+            clearTimeout(inactivityTimer);
+            if (statusInterval) clearInterval(statusInterval);
+            if (iframeActivityChecker) clearInterval(iframeActivityChecker); 
+            
+            // Cierra modales
+            closeAllModals();
+
+            document.body.classList.remove('high-performance-mode');
+            
+            // 1. Ocultar la interfaz de la aplicación si está visible
+            if (!appContent.classList.contains('hidden')) {
+                appContent.classList.add('hidden'); 
+            }
+            // 2. Ocultar la pantalla de login si está visible
+            if (!loginScreen.classList.contains('hidden')) {
+                loginScreen.classList.add('hidden'); 
+            }
+            // También aseguramos que el preloader inicial esté oculto si aún estaba por alguna razón
+            if (!initialLoader.classList.contains('hidden')) {
+                 removeInitialLoader();
+            }
+
+            // Aseguramos que el contenido del mensaje sea el que viene del Backend
+            closureMessageEl.textContent = message || "El sistema ha sido cerrado temporalmente por la Administración.";
+            
+            sessionStorage.removeItem('pinceladas_session');
+            localStorage.removeItem(CACHE_KEY); 
+            
+            closureScreen.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                 document.getElementById('closure-content').classList.remove('scale-95');
+                 document.getElementById('closure-content').classList.add('scale-100');
+                 closureScreen.classList.remove('opacity-0');
+            });
+            // NOTA: Se eliminó .blur-sm de app-content, ya que ahora está hidden.
+        }
+        
+        function closeAllModals() {
+            if (!bulletinModal.classList.contains('hidden')) {
+                closeBulletinModal();
+            }
+            if (!calendarModal.classList.contains('hidden')) {
+                calendarModal.classList.add('opacity-0');
+                calendarModalContent.classList.remove('scale-100');
+                calendarModalContent.classList.add('scale-95');
+                setTimeout(() => { calendarModal.classList.add('hidden'); }, 200);
+            }
+            if (!eventDetailModal.classList.contains('hidden')) {
+                closeEventDetailModal();
+            }
+            if (!tutorialModal.classList.contains('hidden')) {
+                closeTutorialModal();
+            }
         }
         
         function removeInitialLoader() {
@@ -1367,6 +1432,23 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Obtener usernameUnique del login para el chequeo de status
+                    const sessionUsername = data.usernameUnique; 
+                    
+                    // Ahora checkSystemStatus maneja el bloqueo justo después del login
+                    const statusCheck = await checkSystemStatus(sessionUsername);
+
+                    if (statusCheck.status === 'closed') {
+                        // El sistema está cerrado y el usuario NO es admin -> Manejar Cierre
+                        handleClosure(statusCheck.message);
+                        // Restablecer el botón para no dejar el login atascado en estado 'loading' detrás del modal de cierre
+                        btnText.classList.remove('opacity-0');
+                        btnLoader.classList.add('hidden');
+                        btnLogin.classList.remove('cursor-not-allowed');
+                        btnLogin.disabled = false;
+                        return; 
+                    }
+                    
                     updateLoginStatus('success', '¡Acceso Autorizado! Redirigiendo...');
                     currentUserTimeoutMs = (data.timeout || 1.5) * 60 * 1000;
                     
@@ -1380,10 +1462,10 @@
                         name: data.name,
                         permissions: perms, 
                         timeout: data.timeout,
-                        loginTime: new Date().getTime()
+                        loginTime: new Date().getTime(),
+                        username: sessionUsername // Guardamos el username único para el heartbeat
                     }));
                     
-                    setTimeout(() => checkSystemStatus(data.name), 100); 
                     setTimeout(() => prefetchGradesData(), 300); // Lanzamos la precarga de todos los grupos
                     setTimeout(() => loadAnnouncements(), 800); 
 
@@ -1561,8 +1643,6 @@
 
         // --- FETCH DE DATOS DE ESTUDIANTES (LÓGICA STALE-WHILE-REVALIDATE) ---
         
-        // *** Función eliminada: fetchStudentData. Su lógica se divide en loadFromCache y fetchFromNetwork. ***
-
         // --- NUEVAS FUNCIONES PARA EL SELECTOR CUSTOM (Dropdown) ---
 
         function toggleSwitcher(forceClose) {
@@ -1847,6 +1927,7 @@
             if (!dot || !label) return; 
             
             let status = 'Offline';
+            let message = '';
             let url = `${API_URL}?action=checkStatus&t=${new Date().getTime()}`;
             if (username) url += `&username=${encodeURIComponent(username)}`;
 
@@ -1854,27 +1935,47 @@
                  const response = await fetch(url, { redirect: 'follow', cache: 'no-store' }); 
                  if (response.ok) {
                      const data = await response.json();
-                     if(data.status === 'online') {
-                         status = 'En Línea';
+                     status = data.status;
+                     message = data.message;
+                     
+                     // 1. Detección de CIERRE DE PROCESAMIENTO
+                     if (status === 'closed') {
+                         if (!closureScreen.classList.contains('hidden')) return data; // Ya estamos en la pantalla de cierre, no hacer nada más
+                         
+                         // Si estaba navegando, lo sacamos
+                         handleClosure(message);
+                         return data;
                      }
                  }
             } catch (error) { 
                 console.warn("Error al verificar estado de la BD:", error);
+                status = 'Offline';
             } 
 
-            // Actualización de UI
-            dot.classList.remove('bg-gray-400', 'bg-red-500', 'bg-green-500', 'animate-pulse');
-            label.classList.remove('text-montessori-blue', 'text-montessori-red', 'text-gray-500');
-
-            if (status === 'En Línea') {
+            // Si el sistema estaba cerrado y se abre (por ser admin)
+            if (status === 'online_closure') {
+                dot.classList.add('bg-orange-500', 'animate-pulse');
+                label.textContent = "CIERRE ACTIVO"; 
+                label.classList.add('text-orange-600'); 
+            }
+            // Si el sistema está totalmente en línea
+            else if (status === 'online') {
+                dot.classList.remove('bg-gray-400', 'bg-red-500', 'bg-orange-500');
                 dot.classList.add('bg-green-500', 'animate-pulse');
                 label.textContent = "EN LÍNEA"; 
+                label.classList.remove('text-montessori-blue', 'text-montessori-red', 'text-orange-600');
                 label.classList.add('text-montessori-blue'); 
-            } else {
+            } 
+            // Si hay un error de conexión (offline)
+            else if (status === 'Offline' || status === 'error') {
+                dot.classList.remove('bg-green-500', 'bg-orange-500');
                 dot.classList.add('bg-red-500', 'animate-pulse'); 
                 label.textContent = "OFFLINE"; 
+                label.classList.remove('text-montessori-blue', 'text-orange-600');
                 label.classList.add('text-montessori-red'); 
             }
+            
+            return { status, message };
         }
 
         // NUEVO: Función para verificar la actividad en el iframe y resetear el timer.
@@ -1892,7 +1993,7 @@
             }, 5000); // Se ejecuta cada 5 segundos (5000ms)
         }
 
-        function skipIntro(name) {
+        function skipIntro(name, username) {
             loginScreen.classList.add('hidden');
             appContent.classList.remove('hidden');
             appContent.classList.add('flex', 'fade-in');
@@ -1900,7 +2001,7 @@
             // Aseguramos que las animaciones de fondo estén activas al iniciar en el home
             document.body.classList.remove('high-performance-mode');
             
-            initApp(name);
+            initApp(name, username);
             removeInitialLoader();
         }
 
@@ -1926,12 +2027,13 @@
                     // Aseguramos que las animaciones de fondo estén activas al iniciar en el home
                     document.body.classList.remove('high-performance-mode');
 
-                    initApp(name);
+                    const session = JSON.parse(sessionStorage.getItem('pinceladas_session'));
+                    initApp(name, session.username);
                 }, 500); 
             }, 4000); 
         }
 
-        function initApp(name) {
+        function initApp(name, username) {
             userNameDisplay.textContent = name || 'Usuario';
             
             // Inicializar datos de permisos y grados al inicio de la app
@@ -1944,7 +2046,7 @@
             }
             
             renderGrades();
-            startStatusCycle(name);
+            startStatusCycle(username);
             loadAnnouncements();
             resetInactivityTimer(); 
             startIframeActivityChecker(); // NUEVO: Iniciar el verificador de actividad en Iframe
@@ -1961,7 +2063,7 @@
             }, 60000); 
         }
 
-        function checkSessionValidity() {
+        async function checkSessionValidity() {
             // Lógica para verificar sesión...
             const sessionData = sessionStorage.getItem('pinceladas_session');
             if (sessionData) {
@@ -1974,12 +2076,20 @@
                     removeInitialLoader();
                 } else {
                     currentUserTimeoutMs = sessionTimeout;
-                    // Aseguramos que userPermissions es un array de cadenas de texto
+                    
+                    // Verificar estado de bloqueo antes de entrar
+                    const statusCheck = await checkSystemStatus(session.username);
+                    if (statusCheck.status === 'closed') {
+                         handleClosure(statusCheck.message);
+                         return; 
+                    }
+                    
+                    // Si no hay bloqueo y la sesión es válida, entramos
                     const perms = (session.permissions || '').toUpperCase();
                     userPermissions = perms.split(',').map(p => p.trim());
-                    allAccessibleGrades = getAccessibleGrades(perms); // Pasamos el string de permisos
+                    allAccessibleGrades = getAccessibleGrades(perms);
 
-                    skipIntro(session.name);
+                    skipIntro(session.name, session.username);
                     prefetchGradesData(); // Lanzamos la precarga al saltar el login
                     resetInactivityTimer();
                 }
