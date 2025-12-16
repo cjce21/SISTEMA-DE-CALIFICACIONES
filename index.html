@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Notas - Pinceladas Montessori</title>
     
-    <!-- OPTIMIZACIÓN DE CONEXIÓN (PRECONNECT) -->
+    <!-- OPTIMIZACIÓN DE CONEXIÓN (PRECONNECT): Ya implementado para acelerar la conexión a Google Docs/Sheets. -->
     <link rel="preconnect" href="https://docs.google.com">
     <link rel="preconnect" href="https://sheets.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,14 +109,8 @@
             50% { content: '..'; }
             75% { content: '...'; }
         }
-        .loading-text::after {
-            content: '';
-            animation: ellipsis 1.5s infinite;
-            display: inline-block;
-            width: 12px;
-            text-align: left;
-        }
-
+        /* Clase 'loading-text' eliminada de estilos ya que la lógica ahora es dinámica en JS */
+        
         /* --- SKELETON LOADER (NUEVO) --- */
         .animate-shimmer {
             background: linear-gradient(to right, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
@@ -604,12 +598,17 @@
                 </div>
             </div>
             <div class="flex-1 bg-gray-100 relative">
-                 <div id="iframe-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10">
-                    <div class="flex flex-col items-center gap-1">
-                        <span class="text-sm font-bold text-montessori-blue loading-text">Cargando documento</span>
+                 <!-- MODIFICADO: Estructura del loader para la nueva animación secuencial -->
+                 <div id="iframe-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10 transition-opacity duration-300">
+                    <div class="flex flex-col items-center gap-2">
+                        <!-- Ícono para animación de carga -->
+                        <svg id="loader-icon" class="w-10 h-10 text-montessori-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: color 0.3s ease;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <!-- Texto de estado dinámico -->
+                        <span id="loader-status-text" class="text-sm font-bold text-montessori-blue whitespace-nowrap">Cargando documento...</span>
                     </div>
                  </div>
-                 <iframe id="bulletin-iframe" class="w-full h-full border-0" allow="autoplay" loading="lazy"></iframe>
+                 <!-- OPTIMIZACIÓN DE CARGA: Se eliminó loading="lazy" para forzar la carga inmediata del Iframe al abrir el modal. -->
+                 <iframe id="bulletin-iframe" class="w-full h-full border-0" allow="autoplay"></iframe>
             </div>
         </div>
     </div>
@@ -910,6 +909,10 @@
         const bulletinIframe = document.getElementById('bulletin-iframe');
         const iframeLoader = document.getElementById('iframe-loader');
         const closeBulletinBtn = document.getElementById('close-bulletin-btn');
+        // Nuevos elementos para la animación de carga secuencial
+        const loaderIcon = document.getElementById('loader-icon');
+        const loaderStatusText = document.getElementById('loader-status-text');
+
 
         // --- MODAL CALENDARIO ---
         const calendarModal = document.getElementById('calendar-modal');
@@ -934,6 +937,8 @@
         let currentUserTimeoutMs = 1.5 * 60 * 1000; 
         let statusInterval; 
         let iframeActivityChecker; // NUEVA: Contador de actividad en el Iframe
+        let loaderTimeout; // Timeout para la animación de carga secuencial
+
 
         // --- DATOS GLOBALES ---
         // Definición ÚNICA de las constantes de grados
@@ -1027,7 +1032,7 @@
             '12/10/2025': 'Día Internacional de los Derechos Humanos + Inicio evaluaciones finales (10-12 de Dic)',
             '12/12/2025': 'Último día de docencia PSC hasta SPC. Celebraciones navideñas',
             '12/15/2025': 'Último día de docencia PPC e Inicial. Celebraciones navideñas',
-            '12/16/2025': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
+            '12/16/2026': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
             '12/17/2026': 'Claustro docente (ajustado por vacaciones). Entrega planificación del mes, entrega de notas en la plataforma y revisión de registros. Efemérides Enero',
             '12/18/2025': 'Fiesta de Empleados',
             '12/19/2025': 'Fiesta de Empleados',
@@ -1123,10 +1128,10 @@
 
         const educationalHolidays = new Set([
             '1/6/2026', '6/30/2025', '6/30/2026', '4/23/2025', '4/23/2026',
-            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/205', '11/10/26',
+            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/2025', '11/10/2026', // <--- CORRECCIÓN DE TYPOS AQUÍ
             '10/10/2025', '10/10/2026', '10/16/2025', '10/16/2026', '10/21/2025',
             '10/21/2026', '12/3/2025', '12/3/2026', '12/10/2025', '12/10/2026',
-            '11/20/2025', '11/20/206', '4/15/2026', '4/22/2026'
+            '11/20/2025', '11/20/2026', '4/15/2026', '4/22/2026' // <--- CORRECCIÓN DE TYPOS AQUÍ
         ]);
 
         const holyWeekDays = new Set([
@@ -1257,6 +1262,7 @@
             clearTimeout(inactivityTimer);
             if (statusInterval) clearInterval(statusInterval);
             if (iframeActivityChecker) clearInterval(iframeActivityChecker); // NUEVO: Limpiar el verificador de Iframe
+            if (loaderTimeout) clearTimeout(loaderTimeout); // Limpiar timeout de la animación de carga
 
             // Cierra modales
             closeAllModals();
@@ -1281,6 +1287,7 @@
             clearTimeout(inactivityTimer);
             if (statusInterval) clearInterval(statusInterval);
             if (iframeActivityChecker) clearInterval(iframeActivityChecker); 
+            if (loaderTimeout) clearTimeout(loaderTimeout); 
             
             // Cierra modales
             closeAllModals();
@@ -1551,6 +1558,7 @@
         function logout() {
             if (statusInterval) clearInterval(statusInterval);
             if (iframeActivityChecker) clearInterval(iframeActivityChecker); // NUEVO: Limpiar el verificador de Iframe
+            if (loaderTimeout) clearTimeout(loaderTimeout); // Limpiar timeout de la animación de carga
             sessionStorage.removeItem('pinceladas_session');
             localStorage.removeItem(CACHE_KEY); // Limpiamos la caché persistente al cerrar sesión
             location.reload();
@@ -1685,7 +1693,7 @@
                  switcherButton.style.borderWidth = '1px';
             }
 
-            dropdown.innerHTML = allGradesMaster.map(g => {
+            dropdown.innerHTML = allAccessibleGrades.map(g => {
                 if (!checkPermissions(g.nombre, g.nivel)) return '';
 
                 const gradeKey = `${g.nombre}-${g.nivel}`;
@@ -1862,12 +1870,45 @@
             document.body.classList.add('high-performance-mode');
             
             iframeLoader.classList.remove('hidden');
-            bulletinIframe.src = url; 
+
+            // 2. Iniciar la animación y actualización de estado secuencial
+            startBulletinLoaderAnimation(url);
 
             bulletinModal.classList.remove('hidden', 'opacity-0');
         }
 
+        function startBulletinLoaderAnimation(url) {
+            if (loaderTimeout) clearTimeout(loaderTimeout); // Limpiar ejecuciones previas
+
+            // Reset status and icon (Paso 1: Preparación)
+            loaderStatusText.textContent = 'Preparando visor...';
+            loaderIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>`; // Ícono: Prep/Código
+            loaderIcon.classList.remove('animate-spin');
+
+            loaderTimeout = setTimeout(() => {
+                // Paso 2: Conectando (500ms)
+                loaderStatusText.textContent = 'Conectando a Google Drive...';
+                loaderIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M16 16l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>`; // Ícono: Conexión
+                bulletinIframe.src = url; // Iniciar la carga del iframe aquí
+                // loaderIcon.classList.add('animate-spin'); // CLASE DE SPIN ELIMINADA SEGÚN SOLICITUD
+
+                loaderTimeout = setTimeout(() => {
+                    // Paso 3: Descargando/Renderizando (2500ms + 2000ms = 3000ms total)
+                    loaderStatusText.textContent = 'Descargando y renderizando Boletín...';
+                    loaderIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>`; // Ícono: Descarga/Archivo
+                    
+                    // Mensaje de respaldo si la carga es muy lenta
+                    loaderTimeout = setTimeout(() => {
+                        loaderStatusText.textContent = 'El documento es grande. Espere un momento...';
+                    }, 5000); 
+
+                }, 2000); 
+
+            }, 500); // Iniciar preparación tras 500ms
+        }
+
         function closeBulletinModal() {
+            if (loaderTimeout) clearTimeout(loaderTimeout); // Limpiar timeout de la animación
             bulletinModal.classList.add('opacity-0');
             
             // Si no estamos en la vista de estudiantes, reactivar animaciones
@@ -1879,6 +1920,9 @@
             setTimeout(() => {
                 bulletinModal.classList.add('hidden');
                 bulletinIframe.removeAttribute('src'); 
+                // Restaurar el ícono de carga por defecto al cerrar
+                loaderIcon.classList.remove('animate-spin');
+                loaderIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>`;
             }, 50);
         }
 
@@ -2327,7 +2371,12 @@
             initDynamicTexts();
             initAllParticles(); 
             
-            bulletinIframe.onload = () => { iframeLoader.classList.add('hidden'); };
+            // Modificado: El onload ahora solo oculta el loader y limpia el timeout de la animación
+            bulletinIframe.onload = () => { 
+                if (loaderTimeout) clearTimeout(loaderTimeout); // Detener la animación secuencial
+                iframeLoader.classList.add('hidden'); // Ocultar el loader
+            };
+
             closeBulletinBtn.addEventListener('click', closeBulletinModal);
             
             if(studentsContainer) {
