@@ -911,6 +911,12 @@
         let currentGradeName = '';
         let currentGradeLevel = '';
         
+        // --- VARIABLES DE SESIÓN Y TIMEOUT ---
+        let inactivityTimer;
+        let currentUserTimeoutMs = 1.5 * 60 * 1000; 
+        let statusInterval; 
+        let iframeActivityChecker; // NUEVA: Contador de actividad en el Iframe
+
         // --- DATOS GLOBALES ---
         // Definición ÚNICA de las constantes de grados
         const gradosPrimaria = [
@@ -937,10 +943,6 @@
 
         let currentCalMonth = new Date().getMonth();
         let currentCalYear = new Date().getFullYear();
-
-        let inactivityTimer;
-        let currentUserTimeoutMs = 1.5 * 60 * 1000; 
-        let statusInterval; 
 
         // --- DATOS GLOBALES (CALENDARIO) ---
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1230,6 +1232,11 @@
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         function handleSessionTimeout() {
+            // Limpieza de intervalos y timeouts
+            clearTimeout(inactivityTimer);
+            if (statusInterval) clearInterval(statusInterval);
+            if (iframeActivityChecker) clearInterval(iframeActivityChecker); // NUEVO: Limpiar el verificador de Iframe
+
             // IMPORTANTE: Reactivar las animaciones de fondo (quitar modo alto rendimiento)
             document.body.classList.remove('high-performance-mode');
 
@@ -1462,6 +1469,8 @@
         }
 
         function logout() {
+            if (statusInterval) clearInterval(statusInterval);
+            if (iframeActivityChecker) clearInterval(iframeActivityChecker); // NUEVO: Limpiar el verificador de Iframe
             sessionStorage.removeItem('pinceladas_session');
             localStorage.removeItem(CACHE_KEY); // Limpiamos la caché persistente al cerrar sesión
             location.reload();
@@ -1868,6 +1877,21 @@
             }
         }
 
+        // NUEVO: Función para verificar la actividad en el iframe y resetear el timer.
+        function startIframeActivityChecker() {
+            if (iframeActivityChecker) clearInterval(iframeActivityChecker);
+            
+            // Verifica cada 5 segundos si el modal del boletín está abierto, y si lo está,
+            // asume que hay actividad y resetea el temporizador principal.
+            iframeActivityChecker = setInterval(() => {
+                // bulletinModal es el elemento definido globalmente
+                if (bulletinModal && !bulletinModal.classList.contains('hidden')) {
+                    // console.log("[Activity Check] Bulletin open. Resetting inactivity timer.");
+                    resetInactivityTimer();
+                }
+            }, 5000); // Se ejecuta cada 5 segundos (5000ms)
+        }
+
         function skipIntro(name) {
             loginScreen.classList.add('hidden');
             appContent.classList.remove('hidden');
@@ -1923,6 +1947,7 @@
             startStatusCycle(name);
             loadAnnouncements();
             resetInactivityTimer(); 
+            startIframeActivityChecker(); // NUEVO: Iniciar el verificador de actividad en Iframe
             setTimeout(matchWidths, 100); 
         }
         
