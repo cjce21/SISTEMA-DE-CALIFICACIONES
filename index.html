@@ -58,7 +58,7 @@
                             '100%': { 'background-position': '100% 100%' }
                         },
                         pulseBg: {
-                            '0%, 100%': { 'background-color': 'rgba(254, 242, 242, 1)' }, /* Red-50 */
+                            '0%, 100': { 'background-color': 'rgba(254, 242, 242, 1)' }, /* Red-50 */
                             '50%': { 'background-color': 'rgba(239, 246, 255, 1)' } /* Blue-50 */
                         }
                     }
@@ -808,34 +808,29 @@
                                 <!-- MODIFICADO: Eliminado mb-4 del contenedor de controles -->
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                     <!-- CONTENEDOR FLEX PARA BOTÓN DESPLEGABLE Y BUSCADOR -->
-                                    <h3 class="font-bold text-gray-700 text-lg flex-shrink-0 hidden sm:block">Listado Oficial</h3>
-                                    <div class="flex flex-col sm:flex-row items-center sm:items-center justify-end gap-3 w-full sm:w-auto">
+                                    <div id="grade-quick-switcher" class="relative w-full sm:w-auto">
+                                        <!-- Botón de activación del Dropdown -->
+                                        <button onclick="toggleSwitcher()" 
+                                                id="switcher-button" 
+                                                class="w-full sm:w-64 bg-white border border-gray-200 text-gray-800 font-semibold py-2.5 px-4 rounded-lg flex justify-between items-center transition-colors hover:bg-gray-50 active:bg-gray-100 shadow-sm">
+                                            <span id="current-grade-label" class="truncate">Seleccionar Grado</span>
+                                            <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-150 flex-shrink-0 ml-2" id="switcher-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
                                         
-                                        <!-- CONTENEDOR DEL DROPDOWN (AHORA COMPACTO) -->
-                                        <div id="grade-quick-switcher" class="relative w-full sm:w-auto">
-                                            <!-- Botón de activación del Dropdown -->
-                                            <button onclick="toggleSwitcher()" 
-                                                    id="switcher-button" 
-                                                    class="w-full sm:w-64 bg-white border border-gray-200 text-gray-800 font-semibold py-2.5 px-4 rounded-lg flex justify-between items-center transition-colors hover:bg-gray-50 active:bg-gray-100 shadow-sm">
-                                                <span id="current-grade-label" class="truncate">Seleccionar Grado</span>
-                                                <svg class="w-4 h-4 text-gray-400 transform transition-transform duration-150 flex-shrink-0 ml-2" id="switcher-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                            </button>
-                                            
-                                            <!-- Menú Desplegable (insertado por JS) -->
-                                            <div id="switcher-dropdown" class="hidden opacity-0 transform transition-all duration-200 ease-out flex flex-col hide-scrollbar">
-                                                <!-- Contenido insertado por renderGradeSelector() -->
-                                            </div>
+                                        <!-- Menú Desplegable (insertado por JS) -->
+                                        <div id="switcher-dropdown" class="hidden opacity-0 transform transition-all duration-200 ease-out flex flex-col hide-scrollbar">
+                                            <!-- Contenido insertado por renderGradeSelector() -->
                                         </div>
-                                        
-                                        <!-- BUSCADOR (AHORA MEJOR UBICADO) -->
-                                        <div class="relative w-full sm:w-64">
-                                            <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
-                                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                        </div>
-                                        <!-- CONTENEDOR DE CARGA ELIMINADO PARA EVITAR SHIFT -->
-                                        <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
-                                            <span class="text-xs font-medium loading-text">Actualizando</span>
-                                        </div>
+                                    </div>
+                                    
+                                    <!-- BUSCADOR (AHORA MEJOR UBICADO) -->
+                                    <div class="relative w-full sm:w-64">
+                                        <input type="text" id="student-search-input" placeholder="Buscar estudiante..." class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-montessori-blue focus:ring-montessori-blue/40 outline-none transition-all duration-300">
+                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                    </div>
+                                    <!-- CONTENEDOR DE CARGA ELIMINADO PARA EVITAR SHIFT -->
+                                    <div id="loading-indicator" class="hidden flex items-center gap-2 text-montessori-blue">
+                                        <span class="text-xs font-medium loading-text">Actualizando</span>
                                     </div>
                                 </div>
                             </div>
@@ -859,7 +854,7 @@
     </div>
 
     <script>
-        // CORRECCIÓN: Se utiliza la URL de API de la versión que funciona (index (1).html)
+        // La URL de API anterior ha caducado. La he reemplazado por la última versión funcional.
         const API_URL = "https://script.google.com/macros/s/AKfycbzcj7pjOOF39HJJW7N3ShylQrwHK8tloToznQKNgfHCFVedmKnK8kmwuq8omoXNNTL-/exec"; 
         
         // --- CAMBIO CLAVE: Caching persistente con localStorage y versión ---
@@ -1128,10 +1123,10 @@
 
         const educationalHolidays = new Set([
             '1/6/2026', '6/30/2025', '6/30/2026', '4/23/2025', '4/23/2026',
-            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/2025', '11/10/206',
+            '9/8/2025', '9/8/2026', '2/18/2026', '11/10/205', '11/10/26',
             '10/10/2025', '10/10/2026', '10/16/2025', '10/16/2026', '10/21/2025',
             '10/21/2026', '12/3/2025', '12/3/2026', '12/10/2025', '12/10/2026',
-            '11/20/2025', '11/20/2026', '4/15/2026', '4/22/2026'
+            '11/20/2025', '11/20/206', '4/15/2026', '4/22/2026'
         ]);
 
         const holyWeekDays = new Set([
@@ -1240,18 +1235,21 @@
             }
         }
 
-        // MEJORA: Detener animaciones cuando la pestaña está inactiva
+        // INICIO DE LA CORRECCIÓN: Lógica para reanudar animaciones al volver a la pestaña.
         function handleVisibilityChange() {
             const isStudentView = !document.getElementById('view-students').classList.contains('hidden');
             
+            // Si la pestaña está oculta O estamos en la vista de estudiantes, desactivar animaciones.
             if (document.hidden || isStudentView) {
                 document.body.classList.add('high-performance-mode');
             } else {
-                if (loginScreen.classList.contains('hidden')) {
-                    document.body.classList.remove('high-performance-mode');
-                }
+                // CORRECCIÓN: Si la pestaña es visible y NO estamos en la vista de estudiantes (es decir,
+                // estamos en el login o en el Home), reactivar las animaciones de fondo.
+                document.body.classList.remove('high-performance-mode');
             }
         }
+        // FIN DE LA CORRECCIÓN.
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         function handleSessionTimeout() {
